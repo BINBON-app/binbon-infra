@@ -1,0 +1,106 @@
+name: Build and Deploy Services
+
+# Copy this file to the SERVICE MONOREPO at .github/workflows/build-and-deploy.yml
+# (not the infra repo — this builds and deploys application code directly via the
+# ECS API. It never touches Terraform state, so it can run as often as you push.)
+#
+# Assumes each service lives at services/<name>/ with its own Dockerfile, e.g.
+# services/api-gateway/Dockerfile, and that Terraform has already created that
+# service's ECS service/cluster/ECR repo at least once (see the infra repo's
+# terragrunt/envs/<env>/eu-central-1/services stack). Add one entry to the
+# `filters` block below per service so only changed services get built.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "services/**"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        type: choice
+        options: [dev, staging, prod]
+        default: dev
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.filter.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api-gateway:
+              - 'services/api-gateway/**'
+
+  deploy:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.services != '[]'
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'dev' }}
+    strategy:
+      matrix:
+        service: ${{ fromJSON(needs.detect-changes.outputs.services) }}
+    env:
+      ENVIRONMENT: ${{ inputs.environment || 'dev' }}
+      TAG: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ECS_DEPLOY_ROLE_ARN }}
+          aws-region: eu-central-1
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr
+
+      - name: Build and push image
+        run: |
+          set -euo pipefail
+          REPO="${{ steps.ecr.outputs.registry }}/binbon-${ENVIRONMENT}/${{ matrix.service }}"
+          echo "REPO=$REPO" >> "$GITHUB_ENV"
+          docker build -t "$REPO:$TAG" "services/${{ matrix.service }}"
+          docker push "$REPO:$TAG"
+
+      - name: Register new task definition revision
+        id: register
+        run: |
+          set -euo pipefail
+          FAMILY="binbon-${ENVIRONMENT}-${{ matrix.service }}"
+
+          aws ecs describe-task-definition \
+            --task-definition "$FAMILY" \
+            --query taskDefinition > task-def.json
+
+          jq --arg IMAGE "$REPO:$TAG" '
+            .containerDefinitions[0].image = $IMAGE
+            | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)
+          ' task-def.json > task-def-patched.json
+
+          NEW_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://task-def-patched.json \
+            --query 'taskDefinition.taskDefinitionArn' --output text)
+
+          echo "task_definition_arn=$NEW_ARN" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy and wait for stability
+        run: |
+          set -euo pipefail
+          aws ecs update-service \
+            --cluster "binbon-${ENVIRONMENT}" \
+            --service "${{ matrix.service }}" \
+            --task-definition "${{ steps.register.outputs.task_definition_arn }}" \
+            --force-new-deployment > /dev/null
+
+          aws ecs wait services-stable \
+            --cluster "binbon-${ENVIRONMENT}" \
+            --services "${{ matrix.service }}"

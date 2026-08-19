@@ -1,0 +1,6 @@
+.terraform/
+.terragrunt-cache/
+*.tfstate
+*.tfstate.*
+env.hcl
+crash.log

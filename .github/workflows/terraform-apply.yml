@@ -1,0 +1,65 @@
+name: Terraform Apply
+
+# Manually triggered — infra changes are structural and infrequent, decoupled
+# from application deploys (see ci-templates/monorepo for those). Targets a
+# GitHub Environment matching the chosen environment, so staging/prod required
+# reviewers gate the apply.
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        type: choice
+        options: [dev, staging, prod]
+        required: true
+      stack:
+        description: "Directory under envs/<environment>/eu-central-1/ (e.g. 'services', 'data'), or 'all' for run-all"
+        required: true
+        default: "all"
+      action:
+        type: choice
+        options: [plan, apply]
+        default: plan
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  terragrunt:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_TERRAFORM_APPLY_ROLE_ARN }}
+          aws-region: eu-central-1
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.8"
+          terraform_wrapper: false
+
+      - name: Install Terragrunt
+        run: |
+          curl -Lo /tmp/terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/v1.1.1/terragrunt_linux_amd64
+          sudo install -m 0755 /tmp/terragrunt /usr/local/bin/terragrunt
+
+      - name: Terragrunt ${{ inputs.action }}
+        run: |
+          set -euo pipefail
+          APPROVE_FLAG=""
+          if [ "${{ inputs.action }}" = "apply" ]; then
+            APPROVE_FLAG="-auto-approve"
+          fi
+
+          if [ "${{ inputs.stack }}" = "all" ]; then
+            cd "terragrunt/envs/${{ inputs.environment }}/eu-central-1"
+            terragrunt run-all ${{ inputs.action }} -input=false $APPROVE_FLAG
+          else
+            cd "terragrunt/envs/${{ inputs.environment }}/eu-central-1/${{ inputs.stack }}"
+            terragrunt ${{ inputs.action }} -input=false $APPROVE_FLAG
+          fi

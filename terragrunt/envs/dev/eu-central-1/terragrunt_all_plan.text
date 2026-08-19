@@ -1,0 +1,319 @@
+[90m21:13:45.980[m [37mSTDOUT[m [38;5;66m[foundation] [m[36mterraform: [m[33m╷[0m[0m[0m
+[90m21:13:45.988[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[33m╷[0m[0m[0m
+[90m21:13:45.993[m [37mSTDOUT[m [38;5;66m[foundation] [m[36mterraform: [m[33m│[0m [0m[1m[33mWarning: [0m[0m[1mDeprecated Parameter[0m[0m
+[90m21:13:45.995[m [37mSTDOUT[m [38;5;66m[foundation] [m[36mterraform: [m[33m│[0m [0m[0m
+[90m21:13:45.996[m [37mSTDOUT[m [38;5;66m[foundation] [m[36mterraform: [m[33m│[0m [0m[0mThe parameter "dynamodb_table" is deprecated. Use parameter "use_lockfile"[0m
+[90m21:13:45.998[m [37mSTDOUT[m [38;5;66m[foundation] [m[36mterraform: [m[33m│[0m [0minstead.[0m
+[90m21:13:45.995[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[33m│[0m [0m[1m[33mWarning: [0m[0m[1mDeprecated Parameter[0m[0m
+[90m21:13:46.001[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[33m│[0m [0m[0m
+[90m21:13:46.002[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[33m│[0m [0m[0mThe parameter "dynamodb_table" is deprecated. Use parameter "use_lockfile"[0m
+[90m21:13:46.000[m [37mSTDOUT[m [38;5;95m[cognito] [m[36mterraform: [m[33m╷[0m[0m[0m
+[90m21:13:45.999[m [37mSTDOUT[m [38;5;66m[foundation] [m[36mterraform: [m[33m╵[0m[0m[0m
+[90m21:13:46.003[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[33m│[0m [0minstead.[0m
+[90m21:13:46.006[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[33m╵[0m[0m[0m
+[90m21:13:46.004[m [37mSTDOUT[m [38;5;95m[cognito] [m[36mterraform: [m[33m│[0m [0m[1m[33mWarning: [0m[0m[1mDeprecated Parameter[0m[0m
+[90m21:13:46.008[m [37mSTDOUT[m [38;5;95m[cognito] [m[36mterraform: [m[33m│[0m [0m[0m
+[90m21:13:46.009[m [37mSTDOUT[m [38;5;95m[cognito] [m[36mterraform: [m[33m│[0m [0m[0mThe parameter "dynamodb_table" is deprecated. Use parameter "use_lockfile"[0m
+[90m21:13:46.010[m [37mSTDOUT[m [38;5;95m[cognito] [m[36mterraform: [m[33m│[0m [0minstead.[0m
+[90m21:13:46.010[m [37mSTDOUT[m [38;5;95m[cognito] [m[36mterraform: [m[33m╵[0m[0m[0m
+[90m21:13:59.745[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[33m╷[0m[0m[0m
+[90m21:13:59.814[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[33m│[0m [0m[1m[33mWarning: [0m[0m[1mDeprecated Parameter[0m[0m
+[90m21:13:59.818[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[33m│[0m [0m[0m
+[90m21:13:59.819[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[33m│[0m [0m[0mThe parameter "dynamodb_table" is deprecated. Use parameter "use_lockfile"[0m
+[90m21:13:59.821[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[33m│[0m [0minstead.[0m
+[90m21:13:59.823[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[33m╵[0m[0m[0m
+[90m21:14:00.816[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [mAcquiring state lock. This may take a few moments...
+[90m21:14:35.585[m [37mSTDOUT[m [38;5;95m[cognito] [m[36mterraform: [m[0m[1mdata.aws_region.current: Reading...[0m[0m[0m
+[90m21:14:35.580[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_vpc.this: Refreshing state... [id=vpc-0a344cffa1dc063cf][0m[0m
+[90m21:14:35.576[m [37mSTDOUT[m [38;5;66m[foundation] [m[36mterraform: [m[0m[1mdata.aws_partition.current: Reading...[0m[0m[0m
+[90m21:14:35.649[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_cloudwatch_log_group.flow_logs: Refreshing state... [id=/aws/vpc/binbon-dev/flow-logs][0m[0m
+[90m21:14:35.651[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_iam_role.flow_logs: Refreshing state... [id=binbon-dev-vpc-flow-logs][0m[0m
+[90m21:14:35.650[m [37mSTDOUT[m [38;5;95m[cognito] [m[36mterraform: [m[0m[1maws_cognito_user_pool.this: Refreshing state... [id=eu-central-1_erXJJGYne][0m[0m
+[90m21:14:35.648[m [37mSTDOUT[m [38;5;66m[foundation] [m[36mterraform: [m[0m[1mdata.aws_region.current: Reading...[0m[0m[0m
+[90m21:14:35.657[m [37mSTDOUT[m [38;5;66m[foundation] [m[36mterraform: [m[0m[1mdata.aws_caller_identity.current: Reading...[0m[0m[0m
+[90m21:14:35.652[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_eip.nat["eu-central-1a"]: Refreshing state... [id=eipalloc-0dfcd7f33585dd5fb][0m[0m
+[90m21:14:35.656[m [37mSTDOUT[m [38;5;95m[cognito] [m[36mterraform: [m[0m[1mdata.aws_region.current: Read complete after 0s [id=eu-central-1][0m[0m
+[90m21:14:35.661[m [37mSTDOUT[m [38;5;66m[foundation] [m[36mterraform: [m[0m[1mdata.aws_partition.current: Read complete after 0s [id=aws][0m[0m
+[90m21:14:35.674[m [37mSTDOUT[m [38;5;66m[foundation] [m[36mterraform: [m[0m[1mdata.aws_region.current: Read complete after 0s [id=eu-central-1][0m[0m
+[90m21:14:35.679[m [37mSTDOUT[m [38;5;66m[foundation] [m[36mterraform: [m[0m[1mdata.aws_caller_identity.current: Read complete after 0s [id=995192978674][0m[0m
+[90m21:14:35.699[m [37mSTDOUT[m [38;5;66m[foundation] [m[36mterraform: [m[0m[1maws_kms_key.this: Refreshing state... [id=6ce03a2c-4ee2-4d7b-afc2-ab8efbed141c][0m[0m
+[90m21:14:36.328[m [37mSTDOUT[m [38;5;66m[foundation] [m[36mterraform: [m[0m[1maws_kms_alias.this: Refreshing state... [id=alias/binbon-dev-app][0m[0m
+[90m21:14:36.334[m [37mSTDOUT[m [38;5;66m[foundation] [m[36mterraform: [m[0m[1maws_ecr_repository.this["api-gateway"]: Refreshing state... [id=binbon-dev/api-gateway][0m[0m
+[90m21:14:36.511[m [37mSTDOUT[m [38;5;95m[cognito] [m[36mterraform: [m[0m[1maws_cognito_resource_server.api: Refreshing state... [id=eu-central-1_erXJJGYne|binbon-dev-api][0m[0m
+[90m21:14:36.515[m [37mSTDOUT[m [38;5;95m[cognito] [m[36mterraform: [m[0m[1maws_cognito_user_pool_domain.this: Refreshing state... [id=binbon-dev-995192978674][0m[0m
+[90m21:14:36.518[m [37mSTDOUT[m [38;5;95m[cognito] [m[36mterraform: [m[0m[1maws_cognito_user_group.this["users"]: Refreshing state... [id=eu-central-1_erXJJGYne/users][0m[0m
+[90m21:14:36.521[m [37mSTDOUT[m [38;5;95m[cognito] [m[36mterraform: [m[0m[1maws_cognito_user_group.this["moderators"]: Refreshing state... [id=eu-central-1_erXJJGYne/moderators][0m[0m
+[90m21:14:36.526[m [37mSTDOUT[m [38;5;95m[cognito] [m[36mterraform: [m[0m[1maws_cognito_user_group.this["admins"]: Refreshing state... [id=eu-central-1_erXJJGYne/admins][0m[0m
+[90m21:14:36.727[m [37mSTDOUT[m [38;5;95m[cognito] [m[36mterraform: [m[0m[1maws_cognito_user_pool_client.app: Refreshing state... [id=2hmc8e8g30un46827a290a7lfg][0m[0m
+[90m21:14:36.910[m [37mSTDOUT[m [38;5;66m[foundation] [m[36mterraform: [m[0m[1maws_ecr_lifecycle_policy.this["api-gateway"]: Refreshing state... [id=binbon-dev/api-gateway][0m[0m
+[90m21:14:37.024[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_iam_role_policy.flow_logs: Refreshing state... [id=binbon-dev-vpc-flow-logs:terraform-20260815160627988800000001][0m[0m
+[90m21:14:37.172[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_flow_log.this: Refreshing state... [id=fl-0128ee65c02900c29][0m[0m
+[90m21:14:37.185[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_route_table.public: Refreshing state... [id=rtb-0428ced6072c67d28][0m[0m
+[90m21:14:37.190[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_internet_gateway.this: Refreshing state... [id=igw-08bc4dc6d7d51b996][0m[0m
+[90m21:14:37.210[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_subnet.app["eu-central-1c"]: Refreshing state... [id=subnet-0db12b48c6deaf64d][0m[0m
+[90m21:14:37.222[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_subnet.app["eu-central-1b"]: Refreshing state... [id=subnet-0e3ec560be71479a4][0m[0m
+[90m21:14:37.243[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_subnet.public["eu-central-1c"]: Refreshing state... [id=subnet-0a43a8ef7b2080bf6][0m[0m
+[90m21:14:37.247[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_subnet.public["eu-central-1a"]: Refreshing state... [id=subnet-0fa3729c14be2f392][0m[0m
+[90m21:14:37.248[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_subnet.app["eu-central-1a"]: Refreshing state... [id=subnet-02eb8bc96dce70221][0m[0m
+[90m21:14:37.253[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_subnet.public["eu-central-1b"]: Refreshing state... [id=subnet-026b9d7049acca7a4][0m[0m
+[90m21:14:37.268[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_route_table.private["eu-central-1a"]: Refreshing state... [id=rtb-0ca08364af0fb3e91][0m[0m
+[90m21:14:37.391[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_route_table.private["eu-central-1b"]: Refreshing state... [id=rtb-05b7821e83b90e020][0m[0m
+[90m21:14:37.431[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_route_table.private["eu-central-1c"]: Refreshing state... [id=rtb-048e16fa0ebb36316][0m[0m
+[90m21:14:37.479[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_subnet.data["eu-central-1c"]: Refreshing state... [id=subnet-01fd46882431583b1][0m[0m
+[90m21:14:37.558[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_subnet.data["eu-central-1a"]: Refreshing state... [id=subnet-069bbc1f4940f3a1e][0m[0m
+[90m21:14:37.689[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_subnet.data["eu-central-1b"]: Refreshing state... [id=subnet-09c8b0996b5e21cfd][0m[0m
+[90m21:14:37.705[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_route.public_internet: Refreshing state... [id=r-rtb-0428ced6072c67d281080289494][0m[0m
+[90m21:14:37.751[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_nat_gateway.this["eu-central-1a"]: Refreshing state... [id=nat-0ed6def0f36cfe22b][0m[0m
+[90m21:14:37.761[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_route_table_association.public["eu-central-1a"]: Refreshing state... [id=rtbassoc-0e40a20172e66b4ce][0m[0m
+[90m21:14:37.765[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_route_table_association.public["eu-central-1c"]: Refreshing state... [id=rtbassoc-0e200933f4940d53b][0m[0m
+[90m21:14:37.774[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_route_table_association.app["eu-central-1b"]: Refreshing state... [id=rtbassoc-0f6dcd7d0bd7253e1][0m[0m
+[90m21:14:37.782[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_route_table_association.app["eu-central-1a"]: Refreshing state... [id=rtbassoc-0d288ef2097b5b2e0][0m[0m
+[90m21:14:37.790[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_route_table_association.app["eu-central-1c"]: Refreshing state... [id=rtbassoc-01c59533fbe8a6bd2][0m[0m
+[90m21:14:37.793[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_route_table_association.public["eu-central-1b"]: Refreshing state... [id=rtbassoc-0adaead7413cee955][0m[0m
+[90m21:14:37.930[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_route_table_association.data["eu-central-1a"]: Refreshing state... [id=rtbassoc-0227b8f29414dab35][0m[0m
+[90m21:14:37.982[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_route_table_association.data["eu-central-1b"]: Refreshing state... [id=rtbassoc-0b6a32ac9b738ae78][0m[0m
+[90m21:14:37.984[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_route_table_association.data["eu-central-1c"]: Refreshing state... [id=rtbassoc-09d98045c59a0f0a9][0m[0m
+[90m21:14:37.986[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_route.private_nat["eu-central-1b"]: Refreshing state... [id=r-rtb-05b7821e83b90e0201080289494][0m[0m
+[90m21:14:37.989[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_route.private_nat["eu-central-1c"]: Refreshing state... [id=r-rtb-048e16fa0ebb363161080289494][0m[0m
+[90m21:14:37.991[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1maws_route.private_nat["eu-central-1a"]: Refreshing state... [id=r-rtb-0ca08364af0fb3e911080289494][0m[0m
+[90m21:14:40.417[m [37mSTDOUT[m [38;5;95m[cognito] [m[36mterraform: [m[0m[1m[32mNo changes.[0m[1m Your infrastructure matches the configuration.[0m[0m
+[90m21:14:40.419[m [37mSTDOUT[m [38;5;95m[cognito] [m[36mterraform: [m[0mTerraform has compared your real infrastructure against your configuration[0m
+[90m21:14:40.424[m [37mSTDOUT[m [38;5;95m[cognito] [m[36mterraform: [mand found no differences, so no changes are needed.
+[90m21:14:40.981[m [37mSTDOUT[m [38;5;66m[foundation] [m[36mterraform: [m[0m[1m[32mNo changes.[0m[1m Your infrastructure matches the configuration.[0m[0m
+[90m21:14:40.984[m [37mSTDOUT[m [38;5;66m[foundation] [m[36mterraform: [m[0mTerraform has compared your real infrastructure against your configuration[0m
+[90m21:14:40.985[m [37mSTDOUT[m [38;5;66m[foundation] [m[36mterraform: [mand found no differences, so no changes are needed.
+[90m21:14:41.284[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0m[1m[32mNo changes.[0m[1m Your infrastructure matches the configuration.[0m[0m
+[90m21:14:41.285[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [m[0mTerraform has compared your real infrastructure against your configuration[0m
+[90m21:14:41.286[m [37mSTDOUT[m [38;5;67m[network] [m[36mterraform: [mand found no differences, so no changes are needed.
+[90m21:14:43.538[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[0m[1mredpanda_resource_group.this: Refreshing state... [id=895bb4d3-463a-4ed8-8bca-1fee9f199fce][0m[0m
+[90m21:14:45.014[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[0m[1mredpanda_serverless_private_link.this[0]: Refreshing state... [id=da099u48bl3heggu69bg][0m[0m
+[90m21:14:45.320[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[0m[1mredpanda_serverless_cluster.this: Refreshing state... [id=da09ev79a8sfv3jb2gng][0m[0m
+[90m21:14:45.669[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[0m[1mredpanda_user.this["api-gateway"]: Refreshing state... [id=api-gateway][0m[0m
+[90m21:14:45.679[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[0m[1mredpanda_topic.this["notifications"]: Refreshing state... [id=notifications][0m[0m
+[90m21:14:45.692[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[0m[1mredpanda_topic.this["user-events"]: Refreshing state... [id=user-events][0m[0m
+[90m21:14:46.508[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[0m[1mredpanda_acl.topic["api-gateway:topic:user-events:WRITE"]: Refreshing state... [id=TOPIC:user-events:LITERAL:User:api-gateway:*:WRITE:ALLOW][0m[0m
+[90m21:14:46.511[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[0m[1mredpanda_acl.topic["api-gateway:topic:user-events:DESCRIBE"]: Refreshing state... [id=TOPIC:user-events:LITERAL:User:api-gateway:*:DESCRIBE:ALLOW][0m[0m
+[90m21:14:46.512[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[0m[1mredpanda_acl.topic["api-gateway:topic:notifications:WRITE"]: Refreshing state... [id=TOPIC:notifications:LITERAL:User:api-gateway:*:WRITE:ALLOW][0m[0m
+[90m21:14:46.514[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[0m[1mredpanda_acl.topic["api-gateway:topic:notifications:DESCRIBE"]: Refreshing state... [id=TOPIC:notifications:LITERAL:User:api-gateway:*:DESCRIBE:ALLOW][0m[0m
+[90m21:14:47.301[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[0m[1m[32mNo changes.[0m[1m Your infrastructure matches the configuration.[0m[0m
+[90m21:14:47.302[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[0mTerraform has compared your real infrastructure against your configuration[0m
+[90m21:14:47.303[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [mand found no differences, so no changes are needed.
+[90m21:14:47.316[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[33m╷[0m[0m[0m
+[90m21:14:47.317[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[33m│[0m [0m[1m[33mWarning: [0m[0m[1mDeprecated value used[0m[0m
+[90m21:14:47.318[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[33m│[0m [0m[0m
+[90m21:14:47.319[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[33m│[0m [0m[0m  with redpanda_topic.this,[0m
+[90m21:14:47.320[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[33m│[0m [0m  on main.tf line 78, in resource "redpanda_topic" "this":[0m
+[90m21:14:47.321[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[33m│[0m [0m  78:   cluster_api_url    = [4mredpanda_serverless_cluster.this.cluster_api_url[0m[0m[0m
+[90m21:14:47.323[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[33m│[0m [0m[0m
+[90m21:14:47.325[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[33m│[0m [0m  The deprecation originates from redpanda_serverless_cluster.this.cluster_api_url[0m
+[90m21:14:47.326[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[33m│[0m [0m[0m
+[90m21:14:47.327[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[33m│[0m [0mThis field is deprecated and will be removed in a future version. Use[0m
+[90m21:14:47.328[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[33m│[0m [0mdataplane_api.url instead.[0m
+[90m21:14:47.329[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[33m│[0m [0m[0m
+[90m21:14:47.330[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[33m│[0m [0m(and 13 more similar warnings elsewhere)[0m
+[90m21:14:47.331[m [37mSTDOUT[m [38;5;96m[redpanda] [m[36mterraform: [m[33m╵[0m[0m[0m
+[90m21:15:37.553[m [37mSTDOUT[m [38;5;102m[media] [m[36mterraform: [m[33m╷[0m[0m[0m
+[90m21:15:37.566[m [37mSTDOUT[m [38;5;102m[media] [m[36mterraform: [m[33m│[0m [0m[1m[33mWarning: [0m[0m[1mDeprecated Parameter[0m[0m
+[90m21:15:37.567[m [37mSTDOUT[m [38;5;102m[media] [m[36mterraform: [m[33m│[0m [0m[0m
+[90m21:15:37.568[m [37mSTDOUT[m [38;5;102m[media] [m[36mterraform: [m[33m│[0m [0m[0mThe parameter "dynamodb_table" is deprecated. Use parameter "use_lockfile"[0m
+[90m21:15:37.568[m [37mSTDOUT[m [38;5;102m[media] [m[36mterraform: [m[33m│[0m [0minstead.[0m
+[90m21:15:37.569[m [37mSTDOUT[m [38;5;102m[media] [m[36mterraform: [m[33m╵[0m[0m[0m
+[90m21:15:37.571[m [37mSTDOUT[m [38;5;103m[alb] [m[36mterraform: [m[33m╷[0m[0m[0m
+[90m21:15:37.572[m [37mSTDOUT[m [38;5;103m[alb] [m[36mterraform: [m[33m│[0m [0m[1m[33mWarning: [0m[0m[1mDeprecated Parameter[0m[0m
+[90m21:15:37.572[m [37mSTDOUT[m [38;5;103m[alb] [m[36mterraform: [m[33m│[0m [0m[0m
+[90m21:15:37.573[m [37mSTDOUT[m [38;5;103m[alb] [m[36mterraform: [m[33m│[0m [0m[0mThe parameter "dynamodb_table" is deprecated. Use parameter "use_lockfile"[0m
+[90m21:15:37.575[m [37mSTDOUT[m [38;5;103m[alb] [m[36mterraform: [m[33m│[0m [0minstead.[0m
+[90m21:15:37.576[m [37mSTDOUT[m [38;5;103m[alb] [m[36mterraform: [m[33m╵[0m[0m[0m
+[90m21:16:02.115[m [37mSTDOUT[m [38;5;102m[media] [m[36mterraform: [m[0m[1maws_cloudfront_origin_access_control.media: Refreshing state... [id=E1T9KPDG3A8J7D][0m[0m
+[90m21:16:02.115[m [37mSTDOUT[m [38;5;103m[alb] [m[36mterraform: [m[0m[1maws_security_group.alb: Refreshing state... [id=sg-0700b5538d8b0fe74][0m[0m
+[90m21:16:02.147[m [37mSTDOUT[m [38;5;103m[alb] [m[36mterraform: [m[0m[1maws_security_group.tasks: Refreshing state... [id=sg-030cc85ea7cd45aaf][0m[0m
+[90m21:16:02.146[m [37mSTDOUT[m [38;5;102m[media] [m[36mterraform: [m[0m[1maws_iam_role.mediaconvert: Refreshing state... [id=binbon-dev-mediaconvert][0m[0m
+[90m21:16:02.150[m [37mSTDOUT[m [38;5;102m[media] [m[36mterraform: [m[0m[1maws_s3_bucket.media: Refreshing state... [id=binbon-dev-media-20260815162846811500000001][0m[0m
+[90m21:16:02.633[m [37mSTDOUT[m [38;5;103m[alb] [m[36mterraform: [m[0m[1maws_lb.this: Refreshing state... [id=arn:aws:elasticloadbalancing:eu-central-1:995192978674:loadbalancer/app/binbon-dev-alb/690c219bfeb4aa17][0m[0m
+[90m21:16:02.636[m [37mSTDOUT[m [38;5;103m[alb] [m[36mterraform: [m[0m[1maws_vpc_security_group_ingress_rule.http: Refreshing state... [id=sgr-076e134c5c9744271][0m[0m
+[90m21:16:02.639[m [37mSTDOUT[m [38;5;103m[alb] [m[36mterraform: [m[0m[1maws_vpc_security_group_egress_rule.tasks_all: Refreshing state... [id=sgr-039f6793390efdb81][0m[0m
+[90m21:16:02.640[m [37mSTDOUT[m [38;5;103m[alb] [m[36mterraform: [m[0m[1maws_vpc_security_group_egress_rule.all: Refreshing state... [id=sgr-0c39a49d572b1775d][0m[0m
+[90m21:16:02.643[m [37mSTDOUT[m [38;5;103m[alb] [m[36mterraform: [m[0m[1maws_vpc_security_group_ingress_rule.https: Refreshing state... [id=sgr-0364fb84cb1cf0382][0m[0m
+[90m21:16:02.647[m [37mSTDOUT[m [38;5;103m[alb] [m[36mterraform: [m[0m[1maws_vpc_security_group_ingress_rule.tasks_from_alb: Refreshing state... [id=sgr-09c554c4e62cbaa14][0m[0m
+[90m21:16:03.352[m [37mSTDOUT[m [38;5;103m[alb] [m[36mterraform: [m[0m[1maws_lb_listener.http: Refreshing state... [id=arn:aws:elasticloadbalancing:eu-central-1:995192978674:listener/app/binbon-dev-alb/690c219bfeb4aa17/08735f7d905e146c][0m[0m
+[90m21:16:03.487[m [37mSTDOUT[m [38;5;102m[media] [m[36mterraform: [m[0m[1maws_s3_bucket_public_access_block.media: Refreshing state... [id=binbon-dev-media-20260815162846811500000001][0m[0m
+[90m21:16:03.490[m [37mSTDOUT[m [38;5;102m[media] [m[36mterraform: [m[0m[1maws_s3_bucket_server_side_encryption_configuration.media: Refreshing state... [id=binbon-dev-media-20260815162846811500000001][0m[0m
+[90m21:16:03.491[m [37mSTDOUT[m [38;5;102m[media] [m[36mterraform: [m[0m[1maws_s3_bucket_versioning.media: Refreshing state... [id=binbon-dev-media-20260815162846811500000001][0m[0m
+[90m21:16:03.493[m [37mSTDOUT[m [38;5;102m[media] [m[36mterraform: [m[0m[1maws_iam_role_policy.mediaconvert: Refreshing state... [id=binbon-dev-mediaconvert:media-access][0m[0m
+[90m21:16:03.496[m [37mSTDOUT[m [38;5;102m[media] [m[36mterraform: [m[0m[1maws_cloudfront_distribution.media: Refreshing state... [id=EWQ2Y2BCJRCL3][0m[0m
+[90m21:16:03.884[m [37mSTDOUT[m [38;5;103m[alb] [m[36mterraform: [m[0m[1m[32mNo changes.[0m[1m Your infrastructure matches the configuration.[0m[0m
+[90m21:16:03.885[m [37mSTDOUT[m [38;5;103m[alb] [m[36mterraform: [m[0m[0m
+[90m21:16:03.886[m [37mSTDOUT[m [38;5;103m[alb] [m[36mterraform: [mTerraform has compared your real infrastructure against your configuration
+[90m21:16:03.886[m [37mSTDOUT[m [38;5;103m[alb] [m[36mterraform: [mand found no differences, so no changes are needed.
+[90m21:16:04.001[m [37mSTDOUT[m [38;5;102m[media] [m[36mterraform: [m[0m[1maws_s3_bucket_policy.media: Refreshing state... [id=binbon-dev-media-20260815162846811500000001][0m[0m
+[90m21:16:05.197[m [37mSTDOUT[m [38;5;102m[media] [m[36mterraform: [m[0m[1m[32mNo changes.[0m[1m Your infrastructure matches the configuration.[0m[0m
+[90m21:16:05.200[m [37mSTDOUT[m [38;5;102m[media] [m[36mterraform: [m[0mTerraform has compared your real infrastructure against your configuration[0m
+[90m21:16:05.201[m [37mSTDOUT[m [38;5;102m[media] [m[36mterraform: [mand found no differences, so no changes are needed.
+[90m21:16:57.598[m [37mSTDOUT[m [38;5;108m[data] [m[36mterraform: [m[33m╷[0m[0m[0m
+[90m21:16:57.621[m [37mSTDOUT[m [38;5;108m[data] [m[36mterraform: [m[33m│[0m [0m[1m[33mWarning: [0m[0m[1mDeprecated Parameter[0m[0m
+[90m21:16:57.622[m [37mSTDOUT[m [38;5;108m[data] [m[36mterraform: [m[33m│[0m [0m[0m
+[90m21:16:57.622[m [37mSTDOUT[m [38;5;108m[data] [m[36mterraform: [m[33m│[0m [0m[0mThe parameter "dynamodb_table" is deprecated. Use parameter "use_lockfile"[0m
+[90m21:16:57.624[m [37mSTDOUT[m [38;5;108m[data] [m[36mterraform: [m[33m│[0m [0minstead.[0m
+[90m21:16:57.625[m [37mSTDOUT[m [38;5;108m[data] [m[36mterraform: [m[33m╵[0m[0m[0m
+[90m21:16:57.646[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m[33m╷[0m[0m[0m
+[90m21:16:57.648[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m[33m│[0m [0m[1m[33mWarning: [0m[0m[1mDeprecated Parameter[0m[0m
+[90m21:16:57.650[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m[33m│[0m [0m[0m
+[90m21:16:57.650[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m[33m│[0m [0m[0mThe parameter "dynamodb_table" is deprecated. Use parameter "use_lockfile"[0m
+[90m21:16:57.651[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m[33m│[0m [0minstead.[0m
+[90m21:16:57.652[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m[33m╵[0m[0m[0m
+[90m21:17:07.883[m [37mSTDOUT[m [38;5;138m[redpanda-endpoint] [m[36mterraform: [m[33m╷[0m[0m[0m
+[90m21:17:07.956[m [37mSTDOUT[m [38;5;138m[redpanda-endpoint] [m[36mterraform: [m[33m│[0m [0m[1m[33mWarning: [0m[0m[1mDeprecated Parameter[0m[0m
+[90m21:17:07.958[m [37mSTDOUT[m [38;5;138m[redpanda-endpoint] [m[36mterraform: [m[33m│[0m [0m[0m
+[90m21:17:07.966[m [37mSTDOUT[m [38;5;138m[redpanda-endpoint] [m[36mterraform: [m[33m│[0m [0m[0mThe parameter "dynamodb_table" is deprecated. Use parameter "use_lockfile"[0m
+[90m21:17:07.968[m [37mSTDOUT[m [38;5;138m[redpanda-endpoint] [m[36mterraform: [m[33m│[0m [0minstead.[0m
+[90m21:17:07.970[m [37mSTDOUT[m [38;5;138m[redpanda-endpoint] [m[36mterraform: [m[33m╵[0m[0m[0m
+[90m21:17:27.295[m [37mSTDOUT[m [38;5;108m[data] [m[36mterraform: [m[0m[1maws_db_subnet_group.aurora: Refreshing state... [id=binbon-dev-aurora][0m[0m
+[90m21:17:27.302[m [37mSTDOUT[m [38;5;108m[data] [m[36mterraform: [m[0m[1maws_keyspaces_keyspace.this: Refreshing state... [id=binbon_dev_app][0m[0m
+[90m21:17:27.304[m [37mSTDOUT[m [38;5;108m[data] [m[36mterraform: [m[0m[1maws_security_group.data: Refreshing state... [id=sg-0842b3757e24217d6][0m[0m
+[90m21:17:27.652[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [mTerraform used the selected providers to generate the following execution
+[90m21:17:27.654[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [mplan. Resource actions are indicated with the following symbols:
+[90m21:17:27.655[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m  [32m+[0m create[0m[0m
+[90m21:17:27.656[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [mTerraform will perform the following actions:
+[90m21:17:27.659[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m[1m  # aws_cloudfront_distribution.app[0m will be created[0m
+[90m21:17:27.659[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m[0m  [32m+[0m[0m resource "aws_cloudfront_distribution" "app" {[0m
+[90m21:17:27.660[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m arn                             = (known after apply)[0m
+[90m21:17:27.660[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m caller_reference                = (known after apply)[0m
+[90m21:17:27.662[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m continuous_deployment_policy_id = (known after apply)[0m
+[90m21:17:27.666[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m domain_name                     = (known after apply)[0m
+[90m21:17:27.667[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m enabled                         = true[0m
+[90m21:17:27.668[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m etag                            = (known after apply)[0m
+[90m21:17:27.668[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m hosted_zone_id                  = (known after apply)[0m
+[90m21:17:27.669[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m http_version                    = "http2"[0m
+[90m21:17:27.669[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m id                              = (known after apply)[0m
+[90m21:17:27.670[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m in_progress_validation_batches  = (known after apply)[0m
+[90m21:17:27.672[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m is_ipv6_enabled                 = true[0m
+[90m21:17:27.673[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m last_modified_time              = (known after apply)[0m
+[90m21:17:27.674[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m price_class                     = "PriceClass_All"[0m
+[90m21:17:27.674[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m retain_on_delete                = false[0m
+[90m21:17:27.675[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m staging                         = false[0m
+[90m21:17:27.676[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m status                          = (known after apply)[0m
+[90m21:17:27.676[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m tags                            = {[0m
+[90m21:17:27.677[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m "Environment" = "dev"[0m
+[90m21:17:27.678[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m "ManagedBy"   = "Terraform"[0m
+[90m21:17:27.679[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m "Project"     = "binbon"[0m
+[90m21:17:27.680[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m        }
+[90m21:17:27.680[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m tags_all                        = {[0m
+[90m21:17:27.682[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m "Environment" = "dev"[0m
+[90m21:17:27.683[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m "ManagedBy"   = "Terraform"[0m
+[90m21:17:27.683[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m "Project"     = "binbon"[0m
+[90m21:17:27.685[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m        }
+[90m21:17:27.686[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m trusted_key_groups              = (known after apply)[0m
+[90m21:17:27.687[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m trusted_signers                 = (known after apply)[0m
+[90m21:17:27.687[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m wait_for_deployment             = true[0m
+[90m21:17:27.688[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m default_cache_behavior {[0m
+[90m21:17:27.689[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m allowed_methods        = [[0m
+[90m21:17:27.690[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m              [32m+[0m[0m "DELETE",[0m
+[90m21:17:27.691[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m              [32m+[0m[0m "GET",[0m
+[90m21:17:27.692[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m              [32m+[0m[0m "HEAD",[0m
+[90m21:17:27.693[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m              [32m+[0m[0m "OPTIONS",[0m
+[90m21:17:27.693[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m              [32m+[0m[0m "PATCH",[0m
+[90m21:17:27.695[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m              [32m+[0m[0m "POST",[0m
+[90m21:17:27.695[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m              [32m+[0m[0m "PUT",[0m
+[90m21:17:27.696[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m            ]
+[90m21:17:27.697[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m cached_methods         = [[0m
+[90m21:17:27.698[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m              [32m+[0m[0m "GET",[0m
+[90m21:17:27.699[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m              [32m+[0m[0m "HEAD",[0m
+[90m21:17:27.700[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m            ]
+[90m21:17:27.701[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m compress               = true[0m
+[90m21:17:27.701[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m default_ttl            = (known after apply)[0m
+[90m21:17:27.703[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m max_ttl                = (known after apply)[0m
+[90m21:17:27.704[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m min_ttl                = 0[0m
+[90m21:17:27.705[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m target_origin_id       = "alb"[0m
+[90m21:17:27.706[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m trusted_key_groups     = (known after apply)[0m
+[90m21:17:27.707[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m trusted_signers        = (known after apply)[0m
+[90m21:17:27.708[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m viewer_protocol_policy = "redirect-to-https"[0m
+[90m21:17:27.709[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m forwarded_values {[0m
+[90m21:17:27.709[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m              [32m+[0m[0m headers                 = [[0m
+[90m21:17:27.711[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m                  [32m+[0m[0m "Authorization",[0m
+[90m21:17:27.712[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m                  [32m+[0m[0m "Host",[0m
+[90m21:17:27.713[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m                  [32m+[0m[0m "Origin",[0m
+[90m21:17:27.713[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m                ]
+[90m21:17:27.714[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m              [32m+[0m[0m query_string            = true[0m
+[90m21:17:27.715[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m              [32m+[0m[0m query_string_cache_keys = (known after apply)[0m
+[90m21:17:27.716[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m              [32m+[0m[0m cookies {[0m
+[90m21:17:27.719[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m                  [32m+[0m[0m forward           = "all"[0m
+[90m21:17:27.720[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m                  [32m+[0m[0m whitelisted_names = (known after apply)[0m
+[90m21:17:27.721[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m                }
+[90m21:17:27.722[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m            }
+[90m21:17:27.724[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m grpc_config (known after apply)[0m
+[90m21:17:27.725[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m        }
+[90m21:17:27.726[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m origin {[0m
+[90m21:17:27.727[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m connection_attempts      = 3[0m
+[90m21:17:27.728[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m connection_timeout       = 10[0m
+[90m21:17:27.729[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m domain_name              = "binbon-dev-alb-2131517890.eu-central-1.elb.amazonaws.com"[0m
+[90m21:17:27.732[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m origin_id                = "alb"[0m
+[90m21:17:27.733[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m            [90m# (2 unchanged attributes hidden)[0m[0m[0m
+[90m21:17:27.734[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m custom_origin_config {[0m
+[90m21:17:27.736[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m              [32m+[0m[0m http_port                = 80[0m
+[90m21:17:27.737[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m              [32m+[0m[0m https_port               = 443[0m
+[90m21:17:27.739[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m              [32m+[0m[0m origin_keepalive_timeout = 5[0m
+[90m21:17:27.742[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m              [32m+[0m[0m origin_protocol_policy   = "http-only"[0m
+[90m21:17:27.743[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m              [32m+[0m[0m origin_read_timeout      = 30[0m
+[90m21:17:27.743[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m              [32m+[0m[0m origin_ssl_protocols     = [[0m
+[90m21:17:27.730[m [37mSTDOUT[m [38;5;108m[data] [m[36mterraform: [m[0m[1maws_keyspaces_table.this["feed"]: Refreshing state... [id=binbon_dev_app/feed][0m[0m
+[90m21:17:27.745[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m                  [32m+[0m[0m "TLSv1.2",[0m
+[90m21:17:27.747[m [37mSTDOUT[m [38;5;108m[data] [m[36mterraform: [m[0m[1maws_vpc_security_group_ingress_rule.redis: Refreshing state... [id=sgr-04f4a040d08ab5ec0][0m[0m
+[90m21:17:27.748[m [37mSTDOUT[m [38;5;108m[data] [m[36mterraform: [m[0m[1maws_vpc_security_group_egress_rule.all: Refreshing state... [id=sgr-05d41d4b195bfcace][0m[0m
+[90m21:17:27.747[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m                ]
+[90m21:17:27.749[m [37mSTDOUT[m [38;5;108m[data] [m[36mterraform: [m[0m[1maws_vpc_security_group_ingress_rule.postgres: Refreshing state... [id=sgr-0c138e90d8ae7caea][0m[0m
+[90m21:17:27.751[m [37mSTDOUT[m [38;5;108m[data] [m[36mterraform: [m[0m[1maws_elasticache_serverless_cache.redis: Refreshing state... [id=binbon-dev-redis][0m[0m
+[90m21:17:27.752[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m            }
+[90m21:17:27.755[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m        }
+[90m21:17:27.756[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m restrictions {[0m
+[90m21:17:27.757[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m geo_restriction {[0m
+[90m21:17:27.758[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m              [32m+[0m[0m locations        = (known after apply)[0m
+[90m21:17:27.759[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m              [32m+[0m[0m restriction_type = "none"[0m
+[90m21:17:27.760[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m            }
+[90m21:17:27.762[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m        }
+[90m21:17:27.763[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m      [32m+[0m[0m viewer_certificate {[0m
+[90m21:17:27.764[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m cloudfront_default_certificate = true[0m
+[90m21:17:27.765[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m          [32m+[0m[0m minimum_protocol_version       = "TLSv1"[0m
+[90m21:17:27.765[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m        }
+[90m21:17:27.766[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m    }
+[90m21:17:27.767[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m[1mPlan:[0m [0m1 to add, 0 to change, 0 to destroy.[0m
+[90m21:17:27.769[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [mChanges to Outputs:
+[90m21:17:27.770[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m  [32m+[0m[0m cloudfront_domain_name = (known after apply)[0m
+[90m21:17:27.771[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m[90m[0m
+[90m21:17:27.772[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [m─────────────────────────────────────────────────────────────────────────────[0m[0m
+[90m21:17:27.773[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [mNote: You didn't use the -out option to save this plan, so Terraform can't
+[90m21:17:27.773[m [37mSTDOUT[m [38;5;109m[edge] [m[36mterraform: [mguarantee to take exactly these actions if you run "terraform apply" now.
+[90m21:17:27.906[m [37mSTDOUT[m [38;5;108m[data] [m[36mterraform: [m[0m[1maws_rds_cluster.aurora: Refreshing state... [id=binbon-dev-aurora][0m[0m
+[90m21:17:28.227[m [37mSTDOUT[m [38;5;108m[data] [m[36mterraform: [m[0m[1maws_rds_cluster_instance.aurora: Refreshing state... [id=binbon-dev-aurora-1][0m[0m
+[90m21:17:28.757[m [37mSTDOUT[m [38;5;108m[data] [m[36mterraform: [m[0m[1m[32mNo changes.[0m[1m Your infrastructure matches the configuration.[0m[0m
+[90m21:17:28.758[m [37mSTDOUT[m [38;5;108m[data] [m[36mterraform: [m[0m[0m
+[90m21:17:28.759[m [37mSTDOUT[m [38;5;108m[data] [m[36mterraform: [mTerraform has compared your real infrastructure against your configuration
+[90m21:17:28.760[m [37mSTDOUT[m [38;5;108m[data] [m[36mterraform: [mand found no differences, so no changes are needed.
+[90m21:17:29.903[m [37mSTDOUT[m [38;5;138m[redpanda-endpoint] [m[36mterraform: [m[0m[1mdata.aws_subnet.candidate["subnet-0e3ec560be71479a4"]: Reading...[0m[0m[0m
+[90m21:17:29.904[m [37mSTDOUT[m [38;5;138m[redpanda-endpoint] [m[36mterraform: [m[0m[1mdata.aws_subnet.candidate["subnet-02eb8bc96dce70221"]: Reading...[0m[0m[0m
+[90m21:17:29.906[m [37mSTDOUT[m [38;5;138m[redpanda-endpoint] [m[36mterraform: [m[0m[1mdata.aws_subnet.candidate["subnet-0db12b48c6deaf64d"]: Reading...[0m[0m[0m
+[90m21:17:29.907[m [37mSTDOUT[m [38;5;138m[redpanda-endpoint] [m[36mterraform: [m[0m[1maws_security_group.endpoint: Refreshing state... [id=sg-0ee4c62a7990af0e7][0m[0m
+[90m21:17:30.322[m [37mSTDOUT[m [38;5;138m[redpanda-endpoint] [m[36mterraform: [m[0m[1mdata.aws_subnet.candidate["subnet-0e3ec560be71479a4"]: Read complete after 0s [id=subnet-0e3ec560be71479a4][0m[0m
+[90m21:17:30.324[m [37mSTDOUT[m [38;5;138m[redpanda-endpoint] [m[36mterraform: [m[0m[1mdata.aws_subnet.candidate["subnet-02eb8bc96dce70221"]: Read complete after 0s [id=subnet-02eb8bc96dce70221][0m[0m
+[90m21:17:30.325[m [37mSTDOUT[m [38;5;138m[redpanda-endpoint] [m[36mterraform: [m[0m[1mdata.aws_subnet.candidate["subnet-0db12b48c6deaf64d"]: Read complete after 0s [id=subnet-0db12b48c6deaf64d][0m[0m
+[90m21:17:30.347[m [37mSTDOUT[m [38;5;138m[redpanda-endpoint] [m[36mterraform: [m[0m[1maws_vpc_security_group_egress_rule.all: Refreshing state... [id=sgr-0970de6ddff0b5136][0m[0m
+[90m21:17:30.349[m [37mSTDOUT[m [38;5;138m[redpanda-endpoint] [m[36mterraform: [m[0m[1maws_vpc_security_group_ingress_rule.redpanda["kafka"]: Refreshing state... [id=sgr-0c62a0f7e755b0a24][0m[0m
+[90m21:17:30.349[m [37mSTDOUT[m [38;5;138m[redpanda-endpoint] [m[36mterraform: [m[0m[1maws_vpc_security_group_ingress_rule.redpanda["schema_registry"]: Refreshing state... [id=sgr-0425f7285c9b0f45b][0m[0m
+[90m21:17:30.351[m [37mSTDOUT[m [38;5;138m[redpanda-endpoint] [m[36mterraform: [m[0m[1maws_vpc_security_group_ingress_rule.redpanda["dataplane_api"]: Refreshing state... [id=sgr-06e32ac2b5d0f907e][0m[0m
+[90m21:17:30.352[m [37mSTDOUT[m [38;5;138m[redpanda-endpoint] [m[36mterraform: [m[0m[1maws_vpc_endpoint.this: Refreshing state... [id=vpce-0ad269e58796aec21][0m[0m
+[90m21:17:31.558[m [37mSTDOUT[m [38;5;138m[redpanda-endpoint] [m[36mterraform: [m[0m[1m[32mNo changes.[0m[1m Your infrastructure matches the configuration.[0m[0m
+[90m21:17:31.558[m [37mSTDOUT[m [38;5;138m[redpanda-endpoint] [m[36mterraform: [m[0mTerraform has compared your real infrastructure against your configuration[0m
+[90m21:17:31.559[m [37mSTDOUT[m [38;5;138m[redpanda-endpoint] [m[36mterraform: [mand found no differences, so no changes are needed.
+[90m21:18:08.352[m [37mSTDOUT[m [38;5;139m[services] [m[36mterraform: [m[33m╷[0m[0m[0m
+[90m21:18:08.368[m [37mSTDOUT[m [38;5;139m[services] [m[36mterraform: [m[33m│[0m [0m[1m[33mWarning: [0m[0m[1mDeprecated Parameter[0m[0m
+[90m21:18:08.368[m [37mSTDOUT[m [38;5;139m[services] [m[36mterraform: [m[33m│[0m [0m[0m
+[90m21:18:08.369[m [37mSTDOUT[m [38;5;139m[services] [m[36mterraform: [m[33m│[0m [0m[0mThe parameter "dynamodb_table" is deprecated. Use parameter "use_lockfile"[0m
+[90m21:18:08.369[m [37mSTDOUT[m [38;5;139m[services] [m[36mterraform: [m[33m│[0m [0minstead.[0m
+[90m21:18:08.369[m [37mSTDOUT[m [38;5;139m[services] [m[36mterraform: [m[33m╵[0m[0m[0m
+[90m21:18:28.139[m [37mSTDOUT[m [38;5;139m[services] [m[36mterraform: [m[0m[1m[31mPlanning failed.[0m[1m Terraform encountered an error while generating this plan.[0m[0m
+[90m21:18:28.157[m [37mSTDOUT[m [38;5;139m[services] [m[36mterraform: [m[0m[0m
+
+❯❯ Run Summary  10 units  5m
+   ────────────────────────────
+   Succeeded    9
+   Failed       1
+
