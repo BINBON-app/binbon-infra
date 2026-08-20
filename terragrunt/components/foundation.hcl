@@ -6,7 +6,7 @@ backend="s3"
     path      = "backend.tf"
     if_exists = "overwrite_terragrunt"
   }
-config={bucket="binbon-bootstrap-tfstate-20260818130211924200000001",key = "${local.env.locals.environment}/${local.env.locals.region}/${basename(get_original_terragrunt_dir())}/terraform.tfstate",region="eu-central-1",encrypt=true,dynamodb_table="binbon-bootstrap-tf-lock"
+config={bucket="binbon-bootstrap-tfstate-20260820142237684300000001",key = "${local.env.locals.environment}/${local.env.locals.region}/${basename(get_original_terragrunt_dir())}/terraform.tfstate",region="eu-central-1",encrypt=true,dynamodb_table="binbon-bootstrap-tf-lock"
 } 
 }
 generate "provider" {
@@ -23,5 +23,5 @@ terraform {
 source=dirname(find_in_parent_folders("modules/foundation/main.tf")) 
 }
 inputs={
-name="binbon-${local.env.locals.environment}",repositories=toset(keys(local.env.locals.services)),tags=local.tags 
+name="binbon-${local.env.locals.environment}",tags=local.tags
 }

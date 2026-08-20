@@ -141,7 +141,7 @@ network
 
 Application deploys are deliberately **outside Terraform**. Terraform/Terragrunt provisions the ECS cluster, service, task definition shape, target group, and IAM roles — structural, infrequent changes. Which container image is actually running is owned entirely by CI calling the ECS API directly (`register-task-definition` + `update-service`), which can happen many times a day without touching Terraform state or fighting Terraform's own state lock across all 31 services.
 
-Each service's ECR repository (`foundation` module) has `image_tag_mutability = "IMMUTABLE"` — **re-pushing an existing tag always fails**, so every build must use a unique tag; git SHA is the convention used here.
+Each environment has a single ECR repository (`foundation` module — `binbon-dev`, `binbon-staging`, `binbon-prod`), shared by all services and differentiated by tag: `<service-name>-<git-sha>` (e.g. `api-gateway-a1b2c3d`). The repository has `image_tag_mutability = "IMMUTABLE"` — **re-pushing an existing tag always fails**, so every build must use a unique tag; the service-prefixed git SHA is the convention used here.
 
 > [!IMPORTANT]
 > `modules/ecs-services`'s `aws_ecs_service` resource has `lifecycle { ignore_changes = [desired_count, task_definition] }`. This is what makes the split safe: without it, the next unrelated `terraform apply` (e.g. a WAF rule change) would silently force the service back onto whatever task definition Terraform's own state still remembers, undoing every CI deploy since. The tradeoff is the reverse direction isn't automatic either — see "Reconciling after an infra-only change" below.
@@ -175,7 +175,12 @@ Each repo's CI only needs AWS credentials scoped to what it actually does: the m
 
 ### What happens on a push
 
-Push to `main` touching `services/**` → `paths-filter` determines which services changed → for each: build, push to ECR tagged with the commit SHA, `describe-task-definition` the current revision, patch its image field, `register-task-definition`, `update-service --force-new-deployment`, then `ecs wait services-stable` — so the workflow fails loudly if the new image can't reach a healthy state, rather than reporting a false success.
+Branch determines the target environment: `main` → `dev`, `staging` → `staging`, `production` → `prod`. On a push touching `crates/**`, `paths-filter` determines which services changed, then each changed service is fanned out in parallel across two jobs:
+
+1. **`build`** — build the service's Dockerfile (repo root as build context) and push it to that environment's single ECR repository, tagged `<service-name>-<commit-sha>`.
+2. **`deploy`** (needs `build`) — `describe-task-definition` the current revision, patch its image field to the same `<service-name>-<commit-sha>` tag (recomputed, not passed between jobs — the tag is deterministic), `register-task-definition`, `update-service --force-new-deployment`, then `ecs wait services-stable` — so the workflow fails loudly if the new image can't reach a healthy state, rather than reporting a false success.
+
+A manual `workflow_dispatch` run (pick environment + service) follows the same two jobs, skipping `detect-changes`/`paths-filter` entirely.
 
 ### Reconciling after an infra-only change
 
@@ -196,8 +201,8 @@ This is a deliberate manual step, not an oversight — it keeps infra changes fr
 ```bash
 export AWS_PROFILE=<profile>
 ACCOUNT=<account-id>
-TAG=$(git rev-parse --short HEAD)
-REPO="$ACCOUNT.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev/api-gateway"
+TAG="api-gateway-$(git rev-parse --short HEAD)"
+REPO="$ACCOUNT.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev"
 
 aws ecr get-login-password --region eu-central-1 | \
   docker login --username AWS --password-stdin "$ACCOUNT.dkr.ecr.eu-central-1.amazonaws.com"

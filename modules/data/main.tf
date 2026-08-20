@@ -77,6 +77,26 @@ resource "aws_keyspaces_keyspace" "this" {
   name = replace("${var.name}_app", "-", "_")
   tags = var.tags
 }
+data "aws_region" "current" {}
+data "aws_caller_identity" "current" {}
+# CQL driver access to Keyspaces authenticates via IAM service-specific
+# credentials (SigV4), not a native username/password - this is the
+# mechanism AWS provides in place of a Cassandra superuser.
+resource "aws_iam_user" "keyspaces" {
+  name = "${var.name}-keyspaces-app"
+  tags = var.tags
+}
+resource "aws_iam_user_policy" "keyspaces" {
+  name = "keyspaces-access"
+  user = aws_iam_user.keyspaces.name
+  policy = jsonencode({ Version = "2012-10-17", Statement = [{ Effect = "Allow", Action = ["cassandra:Select", "cassandra:Modify"], Resource = "arn:aws:cassandra:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:/keyspace/${aws_keyspaces_keyspace.this.name}/*"
+    }]
+  })
+}
+resource "aws_iam_service_specific_credential" "keyspaces" {
+  user_name    = aws_iam_user.keyspaces.name
+  service_name = "cassandra.amazonaws.com"
+}
 resource "aws_keyspaces_table" "this" {
   for_each = var.keyspaces_tables
 

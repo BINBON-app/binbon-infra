@@ -7,7 +7,7 @@ remote_state {
   }
 
   config = {
-    bucket         = "binbon-bootstrap-tfstate-20260818130211924200000001"
+    bucket         = "binbon-bootstrap-tfstate-20260820142237684300000001"
     key            = "github-oidc/terraform.tfstate"
     region         = "eu-central-1"
     encrypt        = true
@@ -31,10 +31,9 @@ terraform {
 inputs = {
   name = "binbon"
 
-  # REPLACE before applying — see README's CI/CD section.
-  github_org      = "REPLACE_ME"
-  monorepo_name   = "REPLACE_ME"
-  infra_repo_name = "REPLACE_ME"
+  github_org      = "BINBON-app"
+  monorepo_name   = "official-backend-rust"
+  infra_repo_name = "binbon-infra"
 
   tags = { Project = "binbon", ManagedBy = "Terraform" }
 }

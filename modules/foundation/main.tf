@@ -63,8 +63,7 @@ resource "aws_kms_alias" "this" {
   target_key_id = aws_kms_key.this.key_id
 }
 resource "aws_ecr_repository" "this" {
-  for_each             = var.repositories
-  name                 = "${var.name}/${each.value}"
+  name                 = var.name
   image_tag_mutability = "IMMUTABLE"
   image_scanning_configuration {
     scan_on_push = true
@@ -76,9 +75,8 @@ resource "aws_ecr_repository" "this" {
   tags = var.tags
 }
 resource "aws_ecr_lifecycle_policy" "this" {
-  for_each   = aws_ecr_repository.this
-  repository = each.value.name
-  policy = jsonencode({ rules = [{ rulePriority = 1, description = "Keep last 30 images", selection = { tagStatus = "any", countType = "imageCountMoreThan", countNumber = 30
+  repository = aws_ecr_repository.this.name
+  policy = jsonencode({ rules = [{ rulePriority = 1, description = "Keep last 300 images across all services", selection = { tagStatus = "any", countType = "imageCountMoreThan", countNumber = 300
     }, action = { type = "expire"
     }
     }]

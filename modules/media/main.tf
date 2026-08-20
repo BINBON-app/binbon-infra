@@ -90,3 +90,20 @@ resource "aws_iam_role_policy" "mediaconvert" {
     }]
   })
 }
+# Application services use an S3-compatible client (access-key/secret pair,
+# not the task IAM role), so a dedicated IAM user is provisioned here scoped
+# strictly to this bucket.
+resource "aws_iam_user" "media" {
+  name = "${var.name}-media-app"
+  tags = var.tags
+}
+resource "aws_iam_access_key" "media" {
+  user = aws_iam_user.media.name
+}
+resource "aws_iam_user_policy" "media" {
+  name = "media-bucket-access"
+  user = aws_iam_user.media.name
+  policy = jsonencode({ Version = "2012-10-17", Statement = [{ Effect = "Allow", Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"], Resource = [aws_s3_bucket.media.arn, "${aws_s3_bucket.media.arn}/*"]
+    }]
+  })
+}

@@ -10,3 +10,10 @@ output "cloudfront_domain_name" {
 output "mediaconvert_role_arn" {
   value = aws_iam_role.mediaconvert.arn
 }
+output "s3_access_key_id" {
+  value = aws_iam_access_key.media.id
+}
+output "s3_secret_access_key" {
+  value     = aws_iam_access_key.media.secret
+  sensitive = true
+}
