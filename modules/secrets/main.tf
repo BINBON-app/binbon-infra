@@ -9,12 +9,23 @@ data "aws_secretsmanager_secret_version" "aurora_master" {
 locals {
   aurora_master = jsondecode(data.aws_secretsmanager_secret_version.aurora_master.secret_string)
 
-  database_url = "postgres://${local.aurora_master.username}:${urlencode(local.aurora_master.password)}@${var.aurora_endpoint}:5432/${var.aurora_database_name}"
-  redis_url    = "redis://${var.redis_endpoint}:6379"
+  # binbon-backend-inventory.xlsx and deploy/compose/postgres-init/01-create-databases.sql
+  # both establish database-per-service as the real design - each service gets
+  # its own logical database on the shared Aurora cluster, not one shared "app"
+  # database, so their independent sqlx migration histories can never collide.
+  postgres_urls = {
+    for service, dbname in var.postgres_service_databases :
+    service => "postgres://${local.aurora_master.username}:${urlencode(local.aurora_master.password)}@${var.aurora_endpoint}:5432/${dbname}"
+  }
+  redis_url     = "redis://${var.redis_endpoint}:6379"
   kafka_brokers = join(",", var.kafka_brokers)
 
-  infra_secrets = {
-    DATABASE_URL     = local.database_url
+  postgres_secrets = {
+    for service, url in local.postgres_urls :
+    "DATABASE_URL_${service}" => url
+  }
+
+  infra_secrets = merge(local.postgres_secrets, {
     REDIS_URL        = local.redis_url
     KAFKA_BROKERS    = local.kafka_brokers
 
@@ -36,7 +47,7 @@ locals {
     S3_ACCESS_KEY    = var.s3_access_key_id
     S3_SECRET_KEY    = var.s3_secret_access_key
     CDN_BASE_URL     = "https://${var.cdn_domain_name}"
-  }
+  })
 }
 
 resource "aws_secretsmanager_secret" "infra" {

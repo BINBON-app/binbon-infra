@@ -95,7 +95,12 @@ resource "aws_route_table_association" "data" {
   route_table_id = aws_route_table.private[each.key].id
 }
 resource "aws_cloudwatch_log_group" "flow_logs" {
-  name              = "/aws/vpc/${var.name}/flow-logs"
+  # name_prefix (not name) so a fresh rebuild never collides with the
+  # previous cycle's group of the same name - CloudWatch Logs deletion is
+  # only eventually consistent, so a fixed name can 409 as
+  # ResourceAlreadyExistsException for a while after the old one was
+  # destroyed, exactly the failure this has repeatedly hit on rebuilds.
+  name_prefix       = "/aws/vpc/${var.name}/flow-logs-"
   retention_in_days = 30
   tags              = var.tags
 }

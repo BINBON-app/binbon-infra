@@ -5,7 +5,7 @@ remote_state {
     path      = "backend.tf"
     if_exists = "overwrite_terragrunt"
   }
-  config = { bucket = "binbon-bootstrap-tfstate-20260820142237684300000001", key = "${local.env.locals.environment}/${local.env.locals.region}/${basename(get_original_terragrunt_dir())}/terraform.tfstate", region = "eu-central-1", encrypt = true, dynamodb_table = "binbon-bootstrap-tf-lock"
+  config = { bucket = "binbon-bootstrap-tfstate-20260822072816113700000001", key = "${local.env.locals.environment}/${local.env.locals.region}/${basename(get_original_terragrunt_dir())}/terraform.tfstate", region = "eu-central-1", encrypt = true, dynamodb_table = "binbon-bootstrap-tf-lock"
   }
 }
 generate "provider" {
@@ -30,7 +30,7 @@ dependency "foundation" {
 dependency "data" {
   config_path = "../data"
   mock_outputs = {
-    aurora_endpoint = "mock", aurora_secret_arn = "arn:aws:secretsmanager:eu-central-1:123456789012:secret:mock", aurora_database_name = "app", redis_endpoint = "mock",
+    aurora_endpoint = "mock", aurora_secret_arn = "arn:aws:secretsmanager:eu-central-1:123456789012:secret:mock", redis_endpoint = "mock",
     keyspace_name = "mock", keyspaces_endpoint = "mock:9142", keyspaces_username = "mock", keyspaces_password = "mock"
   }
   mock_outputs_allowed_terraform_commands = ["init", "validate", "plan", "destroy"]
@@ -65,10 +65,35 @@ inputs = {
   name        = "binbon-${local.env.locals.environment}"
   kms_key_arn = dependency.foundation.outputs.kms_key_arn
 
-  aurora_endpoint      = dependency.data.outputs.aurora_endpoint
-  aurora_secret_arn    = dependency.data.outputs.aurora_secret_arn
-  aurora_database_name = dependency.data.outputs.aurora_database_name
-  redis_endpoint       = dependency.data.outputs.redis_endpoint
+  aurora_endpoint   = dependency.data.outputs.aurora_endpoint
+  aurora_secret_arn = dependency.data.outputs.aurora_secret_arn
+  redis_endpoint    = dependency.data.outputs.redis_endpoint
+
+  # database-per-service (see deploy/compose/postgres-init/01-create-databases.sql
+  # in the monorepo for the canonical list) - each service's sqlx migration
+  # history lives in its own database, so they can never collide.
+  postgres_service_databases = {
+    "auth-service"         = "binbon_auth"
+    "user-service"         = "binbon_user"
+    "device-service"       = "binbon_device"
+    "rbac-service"         = "binbon_rbac"
+    "media-service"        = "binbon_media"
+    "video-processing-service" = "binbon_video"
+    "sticker-service"      = "binbon_sticker"
+    "call-service"         = "binbon_calls"
+    "wallet-service"       = "binbon_wallet"
+    "payment-service"      = "binbon_payments"
+    "payout-service"       = "binbon_payouts"
+    "live-service"         = "binbon_live"
+    "notification-service" = "binbon_notifications"
+    "gift-service"         = "binbon_gifts"
+    "pk-service"           = "binbon_pk"
+    "location-service"     = "binbon_location"
+    "audit-service"        = "binbon_audit"
+    "report-service"       = "binbon_reports"
+    "moderation-service"   = "binbon_moderation"
+    "fraud-service"        = "binbon_fraud"
+  }
 
   kafka_brokers = dependency.redpanda.outputs.kafka_private_seed_brokers
 

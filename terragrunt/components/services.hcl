@@ -6,7 +6,7 @@ backend="s3"
     path      = "backend.tf"
     if_exists = "overwrite_terragrunt"
   }
-config={bucket="binbon-bootstrap-tfstate-20260820142237684300000001",key = "${local.env.locals.environment}/${local.env.locals.region}/${basename(get_original_terragrunt_dir())}/terraform.tfstate",region="eu-central-1",encrypt=true,dynamodb_table="binbon-bootstrap-tf-lock"
+config={bucket="binbon-bootstrap-tfstate-20260822072816113700000001",key = "${local.env.locals.environment}/${local.env.locals.region}/${basename(get_original_terragrunt_dir())}/terraform.tfstate",region="eu-central-1",encrypt=true,dynamodb_table="binbon-bootstrap-tf-lock"
 } 
 }
 generate "provider" {
@@ -118,6 +118,7 @@ dependency "secrets" {
 }
 inputs = {
   name                   = "binbon-${local.env.locals.environment}"
+  environment            = local.env.locals.environment
   vpc_id                 = dependency.network.outputs.vpc_id
   app_subnet_ids         = dependency.network.outputs.app_subnet_ids
   task_security_group_id = dependency.alb.outputs.task_security_group_id
@@ -137,13 +138,33 @@ inputs = {
         service.redpanda_user == null ? {} : {
           REDPANDA_SASL_USERNAME = dependency.redpanda.outputs.service_usernames[service.redpanda_user]
         },
-        contains(local.scylla_services, name) ? { SCYLLA_TLS = "true" } : {}
+        # SSL_CERT_FILE tells the vendored/statically-built OpenSSL (linked in
+        # via the scylla "keyspaces" Cargo feature) where the runtime image's
+        # CA bundle actually lives. The vendored build's compiled-in default
+        # cert path doesn't match Ubuntu's /etc/ssl/certs, so without this,
+        # set_default_verify_paths() finds no trusted CAs and every TLS
+        # handshake to Amazon Keyspaces fails cert verification (surfacing as
+        # a generic "Connection broken" IO error, not a cert error).
+        contains(local.scylla_services, name) ? {
+          SCYLLA_TLS    = "true"
+          SSL_CERT_FILE = "/etc/ssl/certs/ca-certificates.crt"
+          # Keyspaces schema (keyspace + tables) is provisioned by Terraform
+          # (see modules/data: aws_keyspaces_keyspace/aws_keyspaces_table),
+          # and the app's own IAM user intentionally has no cassandra:Create
+          # grant. MIGRATE_ON_START defaults to true in the app, which makes
+          # it try to self-bootstrap the schema on every start and crash with
+          # a permissions error - must be forced false against Keyspaces.
+          MIGRATE_ON_START = "false"
+        } : {}
       )
       secret_arns = merge(
         service.secret_arns,
         {
           for key in lookup(local.service_secret_keys, name, []) :
-          key => "${dependency.secrets.outputs.secret_arn}:${key}::"
+          # DATABASE_URL is stored per-service (DATABASE_URL_<service>) in the
+          # shared secret, since each service owns its own database - see
+          # postgres_service_databases in components/secrets.hcl.
+          key => key == "DATABASE_URL" ? "${dependency.secrets.outputs.secret_arn}:DATABASE_URL_${name}::" : "${dependency.secrets.outputs.secret_arn}:${key}::"
         }
       )
     })

@@ -72,11 +72,15 @@ resource "aws_opensearch_domain" "this" {
 
 resource "aws_opensearch_domain_policy" "this" {
   domain_name = aws_opensearch_domain.this.domain_name
+  # The domain is VPC-only (see vpc_options above) - the security group is
+  # already the real access boundary, so requests aren't SigV4-signed and an
+  # account-root-only policy just rejects every caller as "anonymous". Open
+  # access here, same as any other VPC-private-only AWS resource.
   access_policies = jsonencode({
     Version = "2012-10-17"
     Statement = [{
       Effect    = "Allow"
-      Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
+      Principal = "*"
       Action    = "es:ESHttp*"
       Resource  = "${aws_opensearch_domain.this.arn}/*"
     }]

@@ -42,6 +42,10 @@ resource "aws_rds_cluster" "aurora" {
   backup_retention_period     = 7
   deletion_protection         = var.enable_deletion_protection
   skip_final_snapshot         = !var.enable_deletion_protection
+  # Lets us run one-off admin SQL (CREATE DATABASE for each service) over the
+  # AWS API plane instead of needing direct network access into the private
+  # subnet Aurora lives in.
+  enable_http_endpoint        = true
   serverlessv2_scaling_configuration {
     min_capacity = var.aurora_min_acu
     max_capacity = var.aurora_max_acu
@@ -89,9 +93,16 @@ resource "aws_iam_user" "keyspaces" {
 resource "aws_iam_user_policy" "keyspaces" {
   name = "keyspaces-access"
   user = aws_iam_user.keyspaces.name
-  policy = jsonencode({ Version = "2012-10-17", Statement = [{ Effect = "Allow", Action = ["cassandra:Select", "cassandra:Modify"], Resource = "arn:aws:cassandra:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:/keyspace/${aws_keyspaces_keyspace.this.name}/*"
-    }]
-  })
+  # The scylla driver reads system.local/system.peers etc. at startup to
+  # discover cluster topology, before it ever touches the app's own
+  # keyspace - without cassandra:Select on system*, that metadata fetch is
+  # denied and the driver reports it as a broken connection, not a clean
+  # auth error. See docs/keyspaces-migration.md section 4.6 in the backend
+  # repo for the full IAM spec this was built from.
+  policy = jsonencode({ Version = "2012-10-17", Statement = [
+    { Effect = "Allow", Action = ["cassandra:Select", "cassandra:Modify"], Resource = "arn:aws:cassandra:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:/keyspace/${aws_keyspaces_keyspace.this.name}/*" },
+    { Effect = "Allow", Action = ["cassandra:Select"], Resource = "arn:aws:cassandra:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:/keyspace/system*" }
+  ] })
 }
 resource "aws_iam_service_specific_credential" "keyspaces" {
   user_name    = aws_iam_user.keyspaces.name
@@ -129,8 +140,8 @@ resource "aws_keyspaces_table" "this" {
       for_each = each.value.clustering_key
 
       content {
-        name     = clustering_key.value
-        order_by = "ASC"
+        name     = clustering_key.value.name
+        order_by = clustering_key.value.order
       }
     }
   }

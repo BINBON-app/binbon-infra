@@ -36,8 +36,12 @@ variable "enable_deletion_protection" {
 variable "keyspaces_tables" {
   type = map(object({
     columns = list(object({
-      name             = string, type = string
-    })), partition_key = list(string), clustering_key = optional(list(string), [])
+      name = string, type = string
+    })),
+    partition_key = list(string),
+    clustering_key = optional(list(object({
+      name = string, order = optional(string, "ASC")
+    })), [])
   }))
   default = {}
 }

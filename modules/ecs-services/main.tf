@@ -89,7 +89,9 @@ resource "aws_lb_listener_rule" "this" {
 resource "aws_ecs_task_definition" "this" {
   for_each = var.services
 
-  family                   = "${var.name}-${each.key}"
+  # Must match the "<service>-<environment>" family name the backend repo's
+  # deploy workflow looks up via `aws ecs describe-task-definition`.
+  family                   = "${each.key}-${var.environment}"
   cpu                      = each.value.cpu
   memory                   = each.value.memory
   network_mode             = "awsvpc"
@@ -124,6 +126,14 @@ resource "aws_ecs_task_definition" "this" {
           valueFrom = v
         }
       ]
+
+      healthCheck = {
+        command     = ["CMD-SHELL", "curl -f http://localhost:${each.value.container_port}${each.value.health_check_path} || exit 1"]
+        interval    = 30
+        timeout     = 5
+        retries     = 3
+        startPeriod = 10
+      }
 
       logConfiguration = {
         logDriver = "awslogs"

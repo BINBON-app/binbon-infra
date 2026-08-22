@@ -10,8 +10,8 @@ variable "aurora_endpoint" {
 variable "aurora_secret_arn" {
   type = string
 }
-variable "aurora_database_name" {
-  type = string
+variable "postgres_service_databases" {
+  type = map(string)
 }
 variable "redis_endpoint" {
   type = string
