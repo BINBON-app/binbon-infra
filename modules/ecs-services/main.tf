@@ -155,8 +155,11 @@ resource "aws_ecs_task_definition" "this" {
   )
 }
 resource "aws_ecs_service" "this" {
-  for_each               = var.services
-  name                   = each.key
+  for_each = var.services
+  # Matches the "<service>-<environment>" task-definition family pattern
+  # (see aws_ecs_task_definition.this.family above) and what the backend
+  # repo's deploy workflow looks up.
+  name                   = "${each.key}-${var.environment}"
   cluster                = aws_ecs_cluster.this.id
   task_definition        = aws_ecs_task_definition.this[each.key].arn
   desired_count          = each.value.desired_count
