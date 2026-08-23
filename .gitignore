@@ -2,7 +2,6 @@
 .terragrunt-cache/
 *.tfstate
 *.tfstate.*
-env.hcl
 crash.log
 *.secrets.env
 .binbon-*-secrets.env
