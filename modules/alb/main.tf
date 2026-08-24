@@ -36,6 +36,18 @@ resource "aws_vpc_security_group_ingress_rule" "tasks_from_alb" {
   to_port                      = 65535
   ip_protocol                  = "tcp"
 }
+# ECS Service Connect routes calls through a per-task Envoy sidecar, so every
+# task needs to reach every other task directly (east-west) - the ALB-only
+# rule above only covers north-south ingress. Without this, Service Connect
+# DNS resolves fine (it's local, per-task) but the actual proxy-to-proxy
+# connection times out with the security group silently dropping it.
+resource "aws_vpc_security_group_ingress_rule" "tasks_from_tasks" {
+  security_group_id            = aws_security_group.tasks.id
+  referenced_security_group_id = aws_security_group.tasks.id
+  from_port                    = 1
+  to_port                      = 65535
+  ip_protocol                  = "tcp"
+}
 resource "aws_vpc_security_group_egress_rule" "tasks_all" {
   security_group_id = aws_security_group.tasks.id
   cidr_ipv4         = "0.0.0.0/0"

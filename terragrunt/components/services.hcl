@@ -57,6 +57,25 @@ env=read_terragrunt_config(find_in_parent_folders("env.hcl"))
   # Services on Amazon Keyspaces need SCYLLA_TLS=true (Keyspaces requires
   # TLS) - not a secret, just a fixed config flag.
   scylla_services = ["feed-service", "engagement-service", "comment-service", "story-service", "chat-service"]
+
+  # The few services that make a synchronous HTTP/gRPC call to another
+  # service (see binbon-backend-inventory.xlsx "Service Dependency Matrix"),
+  # pointed at that service's ECS Service Connect DNS name
+  # (http://<service-key>:<container_port>, see modules/ecs-services -
+  # aws_service_discovery_http_namespace.this / service_connect_configuration).
+  # Every other service's outbound traffic is async (Kafka via KAFKA_BROKERS),
+  # which needs no per-pair wiring.
+  internal_service_urls = {
+    "payment-service" = { WALLET_SERVICE_URL = "http://wallet-service:8097" }
+    "payout-service"  = { WALLET_SERVICE_URL = "http://wallet-service:8097" }
+    "live-service"    = { WALLET_SERVICE_URL = "http://wallet-service:8097" }
+    "admin-service" = {
+      AUDIT_SERVICE_URL      = "http://audit-service:8107"
+      REPORT_SERVICE_URL     = "http://report-service:8108"
+      MODERATION_SERVICE_URL = "http://moderation-service:8109"
+    }
+    "auth-service" = { RBAC_GRPC_URL = "http://rbac-service:9084" }
+  }
 }
 terraform {
 source=dirname(find_in_parent_folders("modules/ecs-services/main.tf")) 
@@ -155,7 +174,8 @@ inputs = {
           # it try to self-bootstrap the schema on every start and crash with
           # a permissions error - must be forced false against Keyspaces.
           MIGRATE_ON_START = "false"
-        } : {}
+        } : {},
+        lookup(local.internal_service_urls, name, {})
       )
       secret_arns = merge(
         service.secret_arns,

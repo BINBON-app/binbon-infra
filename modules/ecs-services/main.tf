@@ -58,6 +58,33 @@ resource "aws_iam_role_policy" "task" {
   role   = aws_iam_role.task[each.key].id
   policy = each.value.task_policy_json
 }
+# ECS Exec (aws ecs execute-command) needs the TASK role - not the execution
+# role - to open an SSM Session Manager channel, plus KMS access to the
+# exec log group's key (execute_command_configuration below). Without this,
+# every exec attempt fails with "execute command was not enabled... or the
+# agent isn't running", regardless of enable_execute_command on the service.
+resource "aws_iam_role_policy" "task_exec" {
+  for_each = var.services
+  name     = "ecs-exec"
+  role     = aws_iam_role.task[each.key].id
+  policy = jsonencode({ Version = "2012-10-17", Statement = [
+    {
+      Effect = "Allow"
+      Action = [
+        "ssmmessages:CreateControlChannel",
+        "ssmmessages:CreateDataChannel",
+        "ssmmessages:OpenControlChannel",
+        "ssmmessages:OpenDataChannel",
+      ]
+      Resource = "*"
+    },
+    {
+      Effect   = "Allow"
+      Action   = ["kms:Decrypt", "kms:GenerateDataKey"]
+      Resource = var.kms_key_arn
+    },
+  ] })
+}
 resource "aws_lb_target_group" "this" {
   for_each    = { for k, v in var.services : k => v if length(v.path_patterns) > 0 }
   name        = substr("${var.name}-${each.key}", 0, 32)
@@ -86,6 +113,16 @@ resource "aws_lb_listener_rule" "this" {
     }
   }
 }
+# ECS Service Connect namespace: gives every service in this cluster a
+# private DNS name (its own service key) reachable from any other service
+# with Service Connect enabled, without a separate service-mesh to run.
+# Fixes synchronous HTTP/gRPC calls between services, which previously had
+# no way to resolve each other's address from inside an awsvpc-networked
+# Fargate task (each service's own default fell back to localhost).
+resource "aws_service_discovery_http_namespace" "this" {
+  name = "${var.name}.internal"
+  tags = var.tags
+}
 resource "aws_ecs_task_definition" "this" {
   for_each = var.services
 
@@ -108,6 +145,7 @@ resource "aws_ecs_task_definition" "this" {
 
       portMappings = [
         {
+          name          = each.key
           containerPort = each.value.container_port
           protocol      = "tcp"
         }
@@ -173,6 +211,20 @@ resource "aws_ecs_service" "this" {
     subnets          = var.app_subnet_ids
     security_groups  = [var.task_security_group_id]
     assign_public_ip = false
+  }
+  # Every service is discoverable at http://<service-key>:<container_port>
+  # from any other service in the cluster - see aws_service_discovery_http_namespace.this.
+  service_connect_configuration {
+    enabled   = true
+    namespace = aws_service_discovery_http_namespace.this.arn
+    service {
+      port_name      = each.key
+      discovery_name = each.key
+      client_alias {
+        port     = each.value.container_port
+        dns_name = each.key
+      }
+    }
   }
   dynamic "load_balancer" {
     for_each = contains(keys(aws_lb_target_group.this), each.key) ? [aws_lb_target_group.this[each.key]] : []
