@@ -1,0 +1,46 @@
+---
+# Same as apply_clickhouse_migrations.yml, but for execution from inside the
+# VPC (a throwaway Fargate task, in this case) where terragrunt/aws-cli
+# aren't available to look up the infra outputs themselves. The outputs are
+# fetched once, locally (where Terraform/AWS CLI access already exists), and
+# passed in as extra-vars instead:
+#
+#   ansible-playbook -i inventory.ini apply_clickhouse_migrations_direct.yml \
+#     -e clickhouse_https_url=https://... \
+#     -e clickhouse_user=default \
+#     -e clickhouse_password=*** \
+#     -e migrations_dir=/path/to/migrations/clickhouse
+
+- name: Apply ClickHouse migrations (direct)
+  hosts: local
+  gather_facts: false
+  vars:
+    repo_root: "{{ playbook_dir }}/.."
+
+  tasks:
+    - name: Require connection vars
+      ansible.builtin.assert:
+        that:
+          - clickhouse_https_url is defined
+          - clickhouse_user is defined
+          - clickhouse_password is defined
+          - migrations_dir is defined
+        fail_msg: "Pass -e clickhouse_https_url=... -e clickhouse_user=... -e clickhouse_password=... -e migrations_dir=..."
+
+    - name: Find migration files
+      ansible.builtin.find:
+        paths: "{{ migrations_dir }}"
+        patterns: "*.sql"
+      register: migration_files
+
+    - name: Fail if no migration files found
+      ansible.builtin.fail:
+        msg: "No .sql files found in {{ migrations_dir }}"
+      when: migration_files.files | length == 0
+
+    - name: Apply each migration file, in filename order
+      ansible.builtin.include_tasks: apply_one_migration.yml
+      loop: "{{ migration_files.files | sort(attribute='path') }}"
+      loop_control:
+        loop_var: migration_file
+        label: "{{ migration_file.path | basename }}"

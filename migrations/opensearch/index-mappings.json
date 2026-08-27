@@ -1,0 +1,139 @@
+{
+  "_meta": {
+    "phase": "Phase 4 — OpenSearch index mappings",
+    "apply": "for each key K (except _meta): PUT /{K} with its {settings,mappings}. See scripts/opensearch-bootstrap.sh.",
+    "notes": "Shared 'autocomplete' analyzer (edge_ngram) for prefix/typeahead; 'standard' for full-text. rank_feature fields drive popularity boosting. Indices are event-fed (search-service consumers)."
+  },
+
+  "binbon_videos": {
+    "settings": {
+      "index": { "number_of_shards": 3, "number_of_replicas": 1 },
+      "analysis": {
+        "tokenizer": {
+          "edge_ngram_tok": { "type": "edge_ngram", "min_gram": 2, "max_gram": 20, "token_chars": ["letter", "digit"] }
+        },
+        "analyzer": {
+          "autocomplete": { "type": "custom", "tokenizer": "edge_ngram_tok", "filter": ["lowercase"] },
+          "autocomplete_search": { "type": "custom", "tokenizer": "lowercase" }
+        }
+      }
+    },
+    "mappings": {
+      "properties": {
+        "video_id": { "type": "keyword" },
+        "owner_id": { "type": "keyword" },
+        "caption": { "type": "text", "analyzer": "standard" },
+        "hashtags": { "type": "keyword" },
+        "sound_id": { "type": "keyword" },
+        "visibility": { "type": "keyword" },
+        "language": { "type": "keyword" },
+        "kind": { "type": "keyword" },
+        "created_at": { "type": "date" },
+        "popularity": { "type": "rank_feature" }
+      }
+    }
+  },
+
+  "binbon_users": {
+    "settings": {
+      "index": { "number_of_shards": 2, "number_of_replicas": 1 },
+      "analysis": {
+        "tokenizer": {
+          "edge_ngram_tok": { "type": "edge_ngram", "min_gram": 2, "max_gram": 20, "token_chars": ["letter", "digit"] }
+        },
+        "analyzer": {
+          "autocomplete": { "type": "custom", "tokenizer": "edge_ngram_tok", "filter": ["lowercase"] },
+          "autocomplete_search": { "type": "custom", "tokenizer": "lowercase" }
+        }
+      }
+    },
+    "mappings": {
+      "properties": {
+        "user_id": { "type": "keyword" },
+        "username": {
+          "type": "text",
+          "analyzer": "autocomplete",
+          "search_analyzer": "autocomplete_search",
+          "fields": { "raw": { "type": "keyword" } }
+        },
+        "display_name": { "type": "text", "analyzer": "standard" },
+        "bio": { "type": "text", "analyzer": "standard" },
+        "is_verified": { "type": "boolean" },
+        "account_type": { "type": "keyword" },
+        "country": { "type": "keyword" },
+        "followers": { "type": "rank_feature" }
+      }
+    }
+  },
+
+  "binbon_hashtags": {
+    "settings": {
+      "index": { "number_of_shards": 1, "number_of_replicas": 1 },
+      "analysis": {
+        "tokenizer": {
+          "edge_ngram_tok": { "type": "edge_ngram", "min_gram": 2, "max_gram": 30, "token_chars": ["letter", "digit"] }
+        },
+        "analyzer": {
+          "autocomplete": { "type": "custom", "tokenizer": "edge_ngram_tok", "filter": ["lowercase"] },
+          "autocomplete_search": { "type": "custom", "tokenizer": "lowercase" }
+        }
+      }
+    },
+    "mappings": {
+      "properties": {
+        "tag": {
+          "type": "text",
+          "analyzer": "autocomplete",
+          "search_analyzer": "autocomplete_search",
+          "fields": { "raw": { "type": "keyword" } }
+        },
+        "post_count": { "type": "rank_feature" }
+      }
+    }
+  },
+
+  "binbon_sounds": {
+    "settings": {
+      "index": { "number_of_shards": 1, "number_of_replicas": 1 },
+      "analysis": {
+        "tokenizer": {
+          "edge_ngram_tok": { "type": "edge_ngram", "min_gram": 2, "max_gram": 20, "token_chars": ["letter", "digit"] }
+        },
+        "analyzer": {
+          "autocomplete": { "type": "custom", "tokenizer": "edge_ngram_tok", "filter": ["lowercase"] },
+          "autocomplete_search": { "type": "custom", "tokenizer": "lowercase" }
+        }
+      }
+    },
+    "mappings": {
+      "properties": {
+        "sound_id": { "type": "keyword" },
+        "title": {
+          "type": "text",
+          "analyzer": "autocomplete",
+          "search_analyzer": "autocomplete_search",
+          "fields": { "raw": { "type": "keyword" } }
+        },
+        "artist": { "type": "text", "analyzer": "standard" },
+        "duration_ms": { "type": "integer" },
+        "use_count": { "type": "rank_feature" }
+      }
+    }
+  },
+
+  "binbon_live": {
+    "settings": {
+      "index": { "number_of_shards": 1, "number_of_replicas": 1 }
+    },
+    "mappings": {
+      "properties": {
+        "stream_id": { "type": "keyword" },
+        "host_id": { "type": "keyword" },
+        "title": { "type": "text", "analyzer": "standard" },
+        "state": { "type": "keyword" },
+        "started_at": { "type": "date" },
+        "viewer_count": { "type": "integer" }
+      }
+    }
+  }
+}

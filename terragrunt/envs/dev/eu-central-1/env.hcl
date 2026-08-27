@@ -481,6 +481,20 @@ locals {
     }
 
   }
+  # OpenVPN Access Server - standing operator access into the VPC (Aurora,
+  # Redis, OpenSearch, etc.) via a real VPN instead of ad-hoc SSM tunnels.
+  # AMI is region-specific and tied to the AWS Marketplace product code
+  # 3ihdqli79gl9v2jnlzs6nq60h - re-look-up if deploying to a new region:
+  #   aws ec2 describe-images --owners aws-marketplace \
+  #     --filters "Name=name,Values=*OpenVPN*Access*Server*"
+  vpn = {
+    ami_id        = "ami-02ec271df508ac2e6"
+    instance_type = "t3.small"
+    key_name      = null
+    # Defaults open (0.0.0.0/0) for SSH (22) and the admin web UI (943) -
+    # tighten to your own IP(s) once the instance is up.
+    admin_cidrs = ["0.0.0.0/0"]
+  }
   redpanda = {
     region                      = "eu-central-1"
     enable_private_link         = true

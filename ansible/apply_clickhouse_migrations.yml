@@ -1,0 +1,80 @@
+---
+# Applies every .sql file in ../migrations/clickhouse/ (in filename order) to
+# the ClickHouse Cloud service Terraform provisions for this environment.
+#
+# Terraform only creates the ClickHouse *service* (compute) - it has no way
+# to run arbitrary DDL against it, so the schema in migrations/clickhouse/
+# was never actually applied. This closes that gap: connection endpoint
+# comes from `terragrunt output` (modules/clickhouse), and the admin
+# password comes from the same Secrets Manager entry the app reads
+# (CLICKHOUSE_PASSWORD in <env>-infra-secrets) - nothing is hardcoded here.
+#
+# All statements in the current migration use `IF NOT EXISTS`, so re-running
+# this playbook is safe.
+#
+# Usage:
+#   ansible-playbook -i inventory.ini apply_clickhouse_migrations.yml \
+#     -e env=dev -e aws_region=eu-central-1 -e aws_profile=binbon-dev
+
+- name: Apply ClickHouse migrations
+  hosts: local
+  gather_facts: false
+  vars:
+    env: dev
+    aws_region: eu-central-1
+    aws_profile: binbon-dev
+    repo_root: "{{ playbook_dir }}/.."
+    clickhouse_terragrunt_dir: "{{ repo_root }}/terragrunt/envs/{{ env }}/{{ aws_region }}/clickhouse"
+    migrations_dir: "{{ repo_root }}/migrations/clickhouse"
+    infra_secret_id: "binbon-{{ env }}-infra-secrets"
+
+  environment:
+    AWS_PROFILE: "{{ aws_profile }}"
+    AWS_DEFAULT_REGION: "{{ aws_region }}"
+
+  tasks:
+    - name: Read ClickHouse HTTPS endpoint from Terraform output
+      ansible.builtin.command:
+        cmd: terragrunt output -json https_url
+        chdir: "{{ clickhouse_terragrunt_dir }}"
+      register: tf_https_url
+      changed_when: false
+
+    - name: Set ClickHouse connection facts
+      ansible.builtin.set_fact:
+        clickhouse_https_url: "{{ tf_https_url.stdout | from_json }}"
+
+    - name: Read ClickHouse admin credentials from Secrets Manager
+      ansible.builtin.command:
+        cmd: >
+          aws secretsmanager get-secret-value
+          --secret-id {{ infra_secret_id }}
+          --region {{ aws_region }}
+          --query SecretString --output text
+      register: infra_secrets_raw
+      changed_when: false
+      no_log: true
+
+    - name: Extract ClickHouse credentials
+      ansible.builtin.set_fact:
+        clickhouse_user: "{{ (infra_secrets_raw.stdout | from_json).CLICKHOUSE_USER }}"
+        clickhouse_password: "{{ (infra_secrets_raw.stdout | from_json).CLICKHOUSE_PASSWORD }}"
+      no_log: true
+
+    - name: Find migration files
+      ansible.builtin.find:
+        paths: "{{ migrations_dir }}"
+        patterns: "*.sql"
+      register: migration_files
+
+    - name: Fail if no migration files found
+      ansible.builtin.fail:
+        msg: "No .sql files found in {{ migrations_dir }}"
+      when: migration_files.files | length == 0
+
+    - name: Apply each migration file, in filename order
+      ansible.builtin.include_tasks: apply_one_migration.yml
+      loop: "{{ migration_files.files | sort(attribute='path') }}"
+      loop_control:
+        loop_var: migration_file
+        label: "{{ migration_file.path | basename }}"

@@ -1,0 +1,37 @@
+---
+# Included per migration_file by apply_clickhouse_migrations.yml. Splits the
+# file into individual statements (ClickHouse's HTTP interface executes one
+# query per request) and POSTs each in file order, so CREATE TABLE / CREATE
+# VIEW dependencies within a file are respected.
+
+- name: "{{ migration_file.path | basename }}: split into statements"
+  ansible.builtin.command:
+    cmd: "python3 {{ repo_root }}/ansible/scripts/split_sql.py {{ migration_file.path }}"
+  register: split_result
+  changed_when: false
+
+- name: "{{ migration_file.path | basename }}: set statement list"
+  ansible.builtin.set_fact:
+    migration_statements: "{{ split_result.stdout | from_json }}"
+
+- name: "{{ migration_file.path | basename }}: apply statements"
+  ansible.builtin.uri:
+    url: "{{ clickhouse_https_url }}/"
+    method: POST
+    body: "{{ item }}"
+    body_format: raw
+    url_username: "{{ clickhouse_user }}"
+    url_password: "{{ clickhouse_password }}"
+    force_basic_auth: true
+    status_code: [200]
+    return_content: true
+    timeout: 60
+  loop: "{{ migration_statements }}"
+  loop_control:
+    label: "{{ item[:60] }}..."
+  no_log: true
+  register: apply_result
+
+- name: "{{ migration_file.path | basename }}: summary"
+  ansible.builtin.debug:
+    msg: "Applied {{ migration_statements | length }} statement(s) from {{ migration_file.path | basename }}"
