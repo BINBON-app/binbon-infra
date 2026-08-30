@@ -5,3 +5,4 @@
 crash.log
 *.secrets.env
 .binbon-*-secrets.env
+*.auto.tfvars.json
