@@ -17,6 +17,16 @@ locals {
   env = read_terragrunt_config(find_in_parent_folders("env.hcl"))
   tags = { Project = "binbon", Environment = local.env.locals.environment, ManagedBy = "Terraform"
   }
+  # Fetched directly from Secrets Manager rather than a manual TF_VAR export -
+  # seeded once via scripts/bootstrap-secrets.sh, never from a local file.
+  clickhouse_admin_password = run_cmd(
+    "--terragrunt-quiet",
+    "aws", "secretsmanager", "get-secret-value",
+    "--secret-id", "binbon-${local.env.locals.environment}-clickhouse-admin-password",
+    "--region", "eu-central-1",
+    "--query", "SecretString",
+    "--output", "text"
+  )
 }
 terraform {
   source = dirname(find_in_parent_folders("modules/secrets/main.tf"))
@@ -97,8 +107,9 @@ inputs = {
 
   kafka_brokers = dependency.redpanda.outputs.kafka_private_seed_brokers
 
-  clickhouse_url       = dependency.clickhouse.outputs.https_url
-  clickhouse_database  = "binbon_analytics"
+  clickhouse_url            = dependency.clickhouse.outputs.https_url
+  clickhouse_database       = "binbon_analytics"
+  clickhouse_admin_password = local.clickhouse_admin_password
 
   opensearch_endpoint = "https://${dependency.opensearch.outputs.endpoint}"
 

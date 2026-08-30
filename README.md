@@ -269,16 +269,9 @@ Both ship with a per-IP rate-based rule (`rate_limit`, default 2000 requests/5 m
 > [!IMPORTANT]
 > This module does **not** use the legacy `tier` argument (`"development"`/`"production"`) — organizations on ClickHouse Cloud's current (non-legacy) pricing model have it rejected outright by the API with `Service tier is not supported`. Instead, size the service per environment via the `clickhouse` block in `env.hcl`: `num_replicas`, `min_replica_memory_gb`, and `max_replica_memory_gb` (fixed-size vertical scaling; set min == max for a non-autoscaling service). Whenever `idle_scaling = true`, `idle_timeout_minutes` must also be set — the module defaults it to `5`.
 
-### CI-only credentials
+### Credentials
 
-```powershell
-$env:CLICKHOUSE_ORG_ID = "..."
-$env:CLICKHOUSE_CLOUD_API_KEY = "..."
-$env:CLICKHOUSE_CLOUD_API_SECRET = "..."
-$env:TF_VAR_clickhouse_admin_password = "replace-with-a-long-random-password"
-```
-
-`admin_password` is passed as a write-only provider field (`password_wo` / `password_wo_version`), so it is never persisted to Terraform state. Store the same password in your secrets manager for application use.
+`terragrunt/components/clickhouse.hcl` fetches the ClickHouse Cloud API credentials (org ID/API key/secret, for the `clickhouse` provider itself) and the ClickHouse admin password directly from AWS Secrets Manager (`<name>-clickhouse-cloud-api`, `<name>-clickhouse-admin-password`) via `run_cmd()` — no `TF_VAR_*`/`CLICKHOUSE_*` env var export needed. Run `scripts/bootstrap-secrets.sh` once per AWS account to seed both. `admin_password` is passed as a write-only provider field (`password_wo` / `password_wo_version`), so it is never persisted to Terraform state.
 
 ---
 
@@ -286,15 +279,9 @@ $env:TF_VAR_clickhouse_admin_password = "replace-with-a-long-random-password"
 
 The Redpanda stack provisions a **Serverless cluster in Frankfurt**, its resource group, Kafka topics, SCRAM-SHA-256 service users, least-privilege ACLs, and an AWS PrivateLink connection.
 
-### CI-only credentials
+### Credentials
 
-```powershell
-$env:REDPANDA_CLIENT_ID = "..."
-$env:REDPANDA_CLIENT_SECRET = "..."
-$env:TF_VAR_service_user_passwords = '{"api-gateway":"replace-with-a-long-random-password"}'
-```
-
-`service_user_passwords` uses write-only provider fields, so passwords are not stored in Terraform state. Put the **same** password in the AWS Secrets Manager secret identified by that service's `REDPANDA_SASL_PASSWORD` ARN. Do not let Terraform manage that secret value.
+`terragrunt/components/redpanda.hcl` fetches the Redpanda Cloud API credentials (for the `redpanda` provider itself) and every `service_users` entry's password directly from AWS Secrets Manager (`<name>-redpanda-cloud-api`, one `<name>-redpanda-<service>` secret per service) via `run_cmd()` — no `TF_VAR_*`/`REDPANDA_CLIENT_ID` env var export needed. Run `scripts/bootstrap-secrets.sh` once per AWS account to seed all of these; it also creates the matching `REDPANDA_SASL_PASSWORD` secret each ECS service reads. `service_user_passwords` uses write-only provider fields, so passwords are not stored in Terraform state.
 
 ### Redpanda deployment sequence
 

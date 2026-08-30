@@ -1,6 +1,3 @@
-provider "clickhouse" {
-}
-
 resource "clickhouse_service" "this" {
   name                  = var.name
   cloud_provider        = "aws"

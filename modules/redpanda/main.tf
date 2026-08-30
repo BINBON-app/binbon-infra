@@ -1,6 +1,3 @@
-provider "redpanda" {
-}
-
 locals {
   topic_acls = flatten([
     for user_name, user in var.service_users : [
