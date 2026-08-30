@@ -104,6 +104,7 @@ resource "aws_iam_user_policy" "media" {
   name = "media-bucket-access"
   user = aws_iam_user.media.name
   policy = jsonencode({ Version = "2012-10-17", Statement = [{ Effect = "Allow", Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"], Resource = [aws_s3_bucket.media.arn, "${aws_s3_bucket.media.arn}/*"]
+    }, { Effect = "Allow", Action = ["kms:GenerateDataKey", "kms:Decrypt"], Resource = var.kms_key_arn
     }]
   })
 }
