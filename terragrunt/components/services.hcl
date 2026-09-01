@@ -74,7 +74,7 @@ env=read_terragrunt_config(find_in_parent_folders("env.hcl"))
       REPORT_SERVICE_URL     = "http://report-service:8108"
       MODERATION_SERVICE_URL = "http://moderation-service:8109"
     }
-    "auth-service" = { RBAC_GRPC_URL = "http://rbac-service:9084" }
+    "auth-service" = { RBAC_GRPC_URL = "http://rbac-service:8084" }
   }
 }
 terraform {
