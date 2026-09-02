@@ -90,6 +90,32 @@ for svc in $SERVICES; do
   unset PASS
 done
 
+# ---------------------------------------------------------------------------
+# 5. Platform-wide shared application secrets.
+#
+#    JWT_SECRET is the HS256 key every service uses to BOTH mint (auth-service)
+#    and verify access tokens - it is symmetric, so all services must receive the
+#    identical value. INTERNAL_API_KEY guards internal service-to-service calls
+#    (payment / payout / live -> wallet, and the other privileged endpoints).
+#
+#    Without these, each service falls back to the insecure constants compiled
+#    into the backend (DEV_JWT_SECRET / "dev-internal-key"), and refuses to boot
+#    entirely once APP_ENV=production.
+#
+#    NOTE: rotating either value invalidates every access token already issued in
+#    this environment, and all services must be redeployed together - a service
+#    still holding the old value will reject tokens minted with the new one.
+# ---------------------------------------------------------------------------
+JWT_SECRET_VALUE=$(random_password)
+ARN=$(create_or_update "${PREFIX}-jwt-secret" "$JWT_SECRET_VALUE")
+echo "JWT signing secret -> ${ARN}"
+unset JWT_SECRET_VALUE
+
+INTERNAL_API_KEY_VALUE=$(random_password)
+ARN=$(create_or_update "${PREFIX}-internal-api-key" "$INTERNAL_API_KEY_VALUE")
+echo "Internal API key -> ${ARN}"
+unset INTERNAL_API_KEY_VALUE
+
 echo
 echo "Done. terragrunt plan/apply on redpanda, clickhouse, and secrets now needs no"
 echo "manually-exported credentials in this account."

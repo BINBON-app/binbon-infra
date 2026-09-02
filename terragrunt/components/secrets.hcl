@@ -27,6 +27,26 @@ locals {
     "--query", "SecretString",
     "--output", "text"
   )
+  # Platform-wide shared secrets, seeded the same way. These are what stop every
+  # service from falling back to the DEV_JWT_SECRET / "dev-internal-key" constants
+  # compiled into the backend (and what unblocks APP_ENV=production, where those
+  # fallbacks are a hard boot failure).
+  jwt_secret = run_cmd(
+    "--terragrunt-quiet",
+    "aws", "secretsmanager", "get-secret-value",
+    "--secret-id", "binbon-${local.env.locals.environment}-jwt-secret",
+    "--region", "eu-central-1",
+    "--query", "SecretString",
+    "--output", "text"
+  )
+  internal_api_key = run_cmd(
+    "--terragrunt-quiet",
+    "aws", "secretsmanager", "get-secret-value",
+    "--secret-id", "binbon-${local.env.locals.environment}-internal-api-key",
+    "--region", "eu-central-1",
+    "--query", "SecretString",
+    "--output", "text"
+  )
 }
 terraform {
   source = dirname(find_in_parent_folders("modules/secrets/main.tf"))
@@ -112,6 +132,9 @@ inputs = {
   clickhouse_admin_password = local.clickhouse_admin_password
 
   opensearch_endpoint = "https://${dependency.opensearch.outputs.endpoint}"
+
+  jwt_secret       = local.jwt_secret
+  internal_api_key = local.internal_api_key
 
   keyspaces_endpoint      = dependency.data.outputs.keyspaces_endpoint
   keyspaces_keyspace_name = dependency.data.outputs.keyspace_name

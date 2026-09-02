@@ -35,6 +35,23 @@ variable "clickhouse_admin_password" {
 variable "opensearch_endpoint" {
   type = string
 }
+# Shared HS256 signing key for platform access tokens. Every service both mints
+# (auth-service) and verifies with this ONE symmetric secret, so all services
+# must receive the identical value or cross-service auth breaks. Seeded once via
+# scripts/bootstrap-secrets.sh; without it each service silently falls back to
+# the insecure DEV_JWT_SECRET constant compiled into the backend, and refuses to
+# boot at all once APP_ENV=production.
+variable "jwt_secret" {
+  type      = string
+  sensitive = true
+}
+# Shared secret guarding internal service-to-service calls (payment / payout /
+# live -> wallet, auth -> rbac, and the other privileged internal endpoints).
+# Same all-or-nothing rule as jwt_secret: caller and callee compare it directly.
+variable "internal_api_key" {
+  type      = string
+  sensitive = true
+}
 variable "keyspaces_endpoint" {
   type = string
 }

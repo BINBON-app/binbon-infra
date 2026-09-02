@@ -36,6 +36,12 @@ locals {
 
     OPENSEARCH_URL = var.opensearch_endpoint
 
+    # Platform-wide shared secrets. Not infra-derived like the rest of this map -
+    # they are generated once by scripts/bootstrap-secrets.sh and read back here,
+    # so the same value reaches every service that needs it.
+    JWT_SECRET       = var.jwt_secret
+    INTERNAL_API_KEY = var.internal_api_key
+
     SCYLLA_NODES    = var.keyspaces_endpoint
     SCYLLA_KEYSPACE = var.keyspaces_keyspace_name
     SCYLLA_USERNAME = var.keyspaces_username
