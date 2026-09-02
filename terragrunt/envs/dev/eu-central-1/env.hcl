@@ -510,23 +510,23 @@ locals {
         }
         }, notifications = { partitions = 3, configuration = { "cleanup.policy" = "delete", "retention.ms" = "259200000"
         }
-        }, "user.events" = { partitions = 6, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
+        }, "user.events" = { partitions = 2, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
         }
-        }, "follow.events" = { partitions = 6, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
+        }, "follow.events" = { partitions = 2, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
         }
-        }, "video.events" = { partitions = 12, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
+        }, "video.events" = { partitions = 2, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
         }
-        }, "post.events" = { partitions = 6, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
+        }, "post.events" = { partitions = 2, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
         }
-        }, "gift.events" = { partitions = 6, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
+        }, "gift.events" = { partitions = 2, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
         }
-        }, "audit.events" = { partitions = 6, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
+        }, "audit.events" = { partitions = 2, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
         }
-        }, "story.events" = { partitions = 6, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
+        }, "story.events" = { partitions = 2, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
         }
-        }, "moderation.events" = { partitions = 6, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
+        }, "moderation.events" = { partitions = 2, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
         }
-        }, "pk.events" = { partitions = 6, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
+        }, "pk.events" = { partitions = 2, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
         }
       }
     }
@@ -606,6 +606,17 @@ locals {
       "pk-service" = { password_wo_version = 1, topic_permissions = { "pk.events" = ["WRITE", "DESCRIBE"]
         }, group_permissions = {
         }, cluster_permissions = []
+      }
+      # Read-only credential for external tooling (Kafka UI, Redpanda Console,
+      # kcat, monitoring) - not one of the 18 per-service application users.
+      # SCRAM works with these tools today, unlike the app services which are
+      # stuck on rskafka's PLAIN-only support pending the cluster-side change.
+      "monitoring-readonly" = { password_wo_version = 1, topic_permissions = {
+          "user.events" = ["READ", "DESCRIBE"], "follow.events" = ["READ", "DESCRIBE"], "video.events" = ["READ", "DESCRIBE"],
+          "post.events" = ["READ", "DESCRIBE"], "gift.events" = ["READ", "DESCRIBE"], "audit.events" = ["READ", "DESCRIBE"],
+          "story.events" = ["READ", "DESCRIBE"], "moderation.events" = ["READ", "DESCRIBE"], "pk.events" = ["READ", "DESCRIBE"]
+        }, group_permissions = {
+        }, cluster_permissions = ["DESCRIBE"]
       }
     }
   }
