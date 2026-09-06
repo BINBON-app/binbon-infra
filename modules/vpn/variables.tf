@@ -18,7 +18,7 @@ variable "instance_type" {
 variable "key_name" {
   type        = string
   default     = null
-  description = "EC2 key pair for SSH access to the instance. Optional - the AMI's default admin credentials also work for first login via the web UI."
+  description = "EC2 key pair for SSH access. Optional: the instance profile gives SSM Session Manager access without one. Do NOT rely on the web UI as a fallback - it does not exist until ovpn-init has run."
 }
 # The VPN instance joins this SAME security group so it inherits exactly the
 # access ECS tasks already have to Aurora/Redis/OpenSearch/etc. (those

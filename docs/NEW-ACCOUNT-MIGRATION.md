@@ -289,6 +289,64 @@ rollout `COMPLETED`.
 
 ---
 
+## 13. Check the VPN actually serves
+
+`terragrunt apply` reports a healthy EC2 instance whether or not OpenVPN is
+running, so verify rather than assume:
+
+```bash
+./scripts/vpn-check.sh dev
+```
+
+Since the `user_data` bootstrap was added the instance self-configures on first
+boot — it runs `ovpn-init`, enables the service, and widens the advertised
+private network to the whole VPC. Instances built **before** that change come up
+dormant: SSH answers on 22 while 443/943/1194 refuse, because `config.db` was
+never created.
+
+To recover a dormant instance without a key pair, use **EC2 Instance Connect**
+(the instance profile also allows SSM Session Manager):
+
+```bash
+aws ec2-instance-connect send-ssh-public-key --instance-id <id> \
+  --instance-os-user root --ssh-public-key file://key.pub \
+  --availability-zone <az> --region eu-central-1
+# then, on the host:
+/usr/local/openvpn_as/bin/ovpn-init --batch --local_auth --host=<public-ip>
+systemctl enable --now openvpnas
+```
+
+> [!WARNING]
+> `--batch` constitutes acceptance of the OpenVPN Access Server EULA. That is the
+> account owner's decision to make, not something to automate on their behalf
+> without asking.
+
+Set an admin password and store it rather than leaving the installer's:
+
+```bash
+/usr/local/openvpn_as/scripts/sacli --user openvpn --new_pass '<pw>' SetLocalPassword
+/usr/local/openvpn_as/scripts/sacli --user openvpn --key prop_superuser --value true UserPropPut
+```
+
+Keep it in Secrets Manager as `binbon-<env>-vpn-admin`.
+
+### If the VPN connects but nothing behind it responds
+
+`ovpn-init` advertises the server's **own subnet** as the private network — a
+`/20` here. Clients then get a route to the VPN's subnet and nothing else, so
+Aurora, Redis and OpenSearch in the other `/20`s time out. It reads like a
+firewall problem and is not:
+
+```bash
+sacli ConfigQuery | grep private_network   # expect the VPC /16, not a /20
+sacli --key "vpn.server.routing.private_network.0" --value "10.20.0.0/16" ConfigPut
+sacli start
+```
+
+Clients must **reconnect** — routes are pushed at connection time.
+
+---
+
 ## Post-migration notes
 
 - **SASL mechanism.** The backend supports `SCRAM-SHA-256` (default),
