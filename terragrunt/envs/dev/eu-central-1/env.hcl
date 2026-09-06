@@ -1,7 +1,7 @@
 locals {
   environment                = "dev"
   region                     = "eu-central-1"
-  account_id                 = "995192978674"
+  account_id                 = "803817915623"
   domain_name                = null
   route53_zone_id            = null
   alb_certificate_arn        = null
@@ -20,128 +20,128 @@ locals {
     password_wo_version   = 1
   }
   services = {
-    api-gateway = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:api-gateway-replace", container_port = 8080, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = ["/api/*"], environment = { APP_ENV = "dev"
-      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:995192978674:secret:binbon-dev-redpanda-api-gateway-jrnhvM"
+    api-gateway = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:api-gateway-replace", container_port = 8080, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = ["/api/*"], environment = { APP_ENV = "dev"
+      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:803817915623:secret:binbon-dev-redpanda-api-gateway-8iakcw"
       }, redpanda_user = "api-gateway", task_policy_json = null
     }
-    admin-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:admin-service-replace", container_port = 8103, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+    admin-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:admin-service-replace", container_port = 8103, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
       }, secret_arns = {
       }, redpanda_user = null, task_policy_json = null
     }
-    analytics-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:analytics-service-replace", container_port = 8102, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
-      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:995192978674:secret:binbon-dev-redpanda-analytics-service-nUaRWp"
+    analytics-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:analytics-service-replace", container_port = 8102, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:803817915623:secret:binbon-dev-redpanda-analytics-service-IgdPq5"
       }, redpanda_user = "analytics-service", task_policy_json = null
     }
-    audit-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:audit-service-replace", container_port = 8107, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
-      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:995192978674:secret:binbon-dev-redpanda-audit-service-rwZWaU"
+    audit-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:audit-service-replace", container_port = 8107, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:803817915623:secret:binbon-dev-redpanda-audit-service-eMkkUX"
       }, redpanda_user = "audit-service", task_policy_json = null
     }
-    auth-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:auth-service-replace", container_port = 8081, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
-      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:995192978674:secret:binbon-dev-redpanda-auth-service-PKVDkA"
+    auth-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:auth-service-replace", container_port = 8081, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:803817915623:secret:binbon-dev-redpanda-auth-service-tZYgGw"
       }, redpanda_user = "auth-service", task_policy_json = null
     }
-    call-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:call-service-replace", container_port = 8096, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+    call-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:call-service-replace", container_port = 8096, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
       }, secret_arns = {
       }, redpanda_user = null, task_policy_json = null
     }
-    chat-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:chat-service-replace", container_port = 8094, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+    chat-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:chat-service-replace", container_port = 8094, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
       }, secret_arns = {
       }, redpanda_user = null, task_policy_json = null
     }
-    comment-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:comment-service-replace", container_port = 8090, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
-      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:995192978674:secret:binbon-dev-redpanda-comment-service-JhxNGn"
+    comment-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:comment-service-replace", container_port = 8090, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:803817915623:secret:binbon-dev-redpanda-comment-service-6sydAn"
       }, redpanda_user = "comment-service", task_policy_json = null
     }
-    device-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:device-service-replace", container_port = 8083, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+    device-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:device-service-replace", container_port = 8083, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
       }, secret_arns = {
       }, redpanda_user = null, task_policy_json = null
     }
-    engagement-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:engagement-service-replace", container_port = 8088, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
-      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:995192978674:secret:binbon-dev-redpanda-engagement-service-F5da7R"
+    engagement-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:engagement-service-replace", container_port = 8088, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:803817915623:secret:binbon-dev-redpanda-engagement-service-fTWrdY"
       }, redpanda_user = "engagement-service", task_policy_json = null
     }
-    feed-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:feed-service-replace", container_port = 8087, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
-      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:995192978674:secret:binbon-dev-redpanda-feed-service-tKq5GN"
+    feed-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:feed-service-replace", container_port = 8087, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:803817915623:secret:binbon-dev-redpanda-feed-service-ulDSF5"
       }, redpanda_user = "feed-service", task_policy_json = null
     }
-    fraud-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:fraud-service-replace", container_port = 8110, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+    fraud-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:fraud-service-replace", container_port = 8110, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
       }, secret_arns = {
       }, redpanda_user = null, task_policy_json = null
     }
-    gift-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:gift-service-replace", container_port = 8104, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
-      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:995192978674:secret:binbon-dev-redpanda-gift-service-LNNXMH"
+    gift-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:gift-service-replace", container_port = 8104, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:803817915623:secret:binbon-dev-redpanda-gift-service-qgJImI"
       }, redpanda_user = "gift-service", task_policy_json = null
     }
-    live-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:live-service-replace", container_port = 8100, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+    live-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:live-service-replace", container_port = 8100, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
       }, secret_arns = {
       }, redpanda_user = null, task_policy_json = null
     }
-    location-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:location-service-replace", container_port = 8106, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+    location-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:location-service-replace", container_port = 8106, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
       }, secret_arns = {
       }, redpanda_user = null, task_policy_json = null
     }
-    media-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:media-service-replace", container_port = 8085, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
-      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:995192978674:secret:binbon-dev-redpanda-media-service-m7km3Q"
+    media-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:media-service-replace", container_port = 8085, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:803817915623:secret:binbon-dev-redpanda-media-service-gGx9rH"
       }, redpanda_user = "media-service", task_policy_json = null
     }
-    moderation-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:moderation-service-replace", container_port = 8109, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
-      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:995192978674:secret:binbon-dev-redpanda-moderation-service-1oRHt3"
+    moderation-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:moderation-service-replace", container_port = 8109, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:803817915623:secret:binbon-dev-redpanda-moderation-service-MrSlnl"
       }, redpanda_user = "moderation-service", task_policy_json = null
     }
-    notification-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:notification-service-replace", container_port = 8101, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
-      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:995192978674:secret:binbon-dev-redpanda-notification-service-v9iz8T"
+    notification-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:notification-service-replace", container_port = 8101, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:803817915623:secret:binbon-dev-redpanda-notification-service-WMtKxJ"
       }, redpanda_user = "notification-service", task_policy_json = null
     }
-    payment-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:payment-service-replace", container_port = 8098, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+    payment-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:payment-service-replace", container_port = 8098, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
       }, secret_arns = {
       }, redpanda_user = null, task_policy_json = null
     }
-    payout-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:payout-service-replace", container_port = 8099, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+    payout-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:payout-service-replace", container_port = 8099, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
       }, secret_arns = {
       }, redpanda_user = null, task_policy_json = null
     }
-    pk-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:pk-service-replace", container_port = 8105, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
-      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:995192978674:secret:binbon-dev-redpanda-pk-service-dlNEYw"
+    pk-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:pk-service-replace", container_port = 8105, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:803817915623:secret:binbon-dev-redpanda-pk-service-S1Zzr9"
       }, redpanda_user = "pk-service", task_policy_json = null
     }
-    presence-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:presence-service-replace", container_port = 8095, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+    presence-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:presence-service-replace", container_port = 8095, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
       }, secret_arns = {
       }, redpanda_user = null, task_policy_json = null
     }
-    rbac-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:rbac-service-replace", container_port = 8084, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+    rbac-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:rbac-service-replace", container_port = 8084, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
       }, secret_arns = {
       }, redpanda_user = null, task_policy_json = null
     }
-    recommendation-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:recommendation-service-replace", container_port = 8089, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
-      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:995192978674:secret:binbon-dev-redpanda-recommendation-service-esXy7M"
+    recommendation-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:recommendation-service-replace", container_port = 8089, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:803817915623:secret:binbon-dev-redpanda-recommendation-service-mILzDj"
       }, redpanda_user = "recommendation-service", task_policy_json = null
     }
-    report-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:report-service-replace", container_port = 8108, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
-      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:995192978674:secret:binbon-dev-redpanda-report-service-w5pXxz"
+    report-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:report-service-replace", container_port = 8108, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:803817915623:secret:binbon-dev-redpanda-report-service-ZcUyw0"
       }, redpanda_user = "report-service", task_policy_json = null
     }
-    search-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:search-service-replace", container_port = 8093, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
-      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:995192978674:secret:binbon-dev-redpanda-search-service-pkTxzp"
+    search-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:search-service-replace", container_port = 8093, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:803817915623:secret:binbon-dev-redpanda-search-service-p1LMwL"
       }, redpanda_user = "search-service", task_policy_json = null
     }
-    sticker-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:sticker-service-replace", container_port = 8092, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+    sticker-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:sticker-service-replace", container_port = 8092, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
       }, secret_arns = {
       }, redpanda_user = null, task_policy_json = null
     }
-    story-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:story-service-replace", container_port = 8091, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
-      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:995192978674:secret:binbon-dev-redpanda-story-service-H7CmjC"
+    story-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:story-service-replace", container_port = 8091, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:803817915623:secret:binbon-dev-redpanda-story-service-gQt2Pp"
       }, redpanda_user = "story-service", task_policy_json = null
     }
-    user-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:user-service-replace", container_port = 8082, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
-      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:995192978674:secret:binbon-dev-redpanda-user-service-qyiVbm"
+    user-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:user-service-replace", container_port = 8082, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:803817915623:secret:binbon-dev-redpanda-user-service-OfZJnq"
       }, redpanda_user = "user-service", task_policy_json = null
     }
-    video-processing-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:video-processing-service-replace", container_port = 8086, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
-      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:995192978674:secret:binbon-dev-redpanda-video-processing-service-pIbxai"
+    video-processing-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:video-processing-service-replace", container_port = 8086, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:803817915623:secret:binbon-dev-redpanda-video-processing-service-3KBM5R"
       }, redpanda_user = "video-processing-service", task_policy_json = null
     }
-    wallet-service = { image = "995192978674.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:wallet-service-replace", container_port = 8097, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
-      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:995192978674:secret:binbon-dev-redpanda-wallet-service-82IyDs"
+    wallet-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:wallet-service-replace", container_port = 8097, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+      }, secret_arns = { REDPANDA_SASL_PASSWORD = "arn:aws:secretsmanager:eu-central-1:803817915623:secret:binbon-dev-redpanda-wallet-service-LwFXEY"
       }, redpanda_user = "wallet-service", task_policy_json = null
     }
   }
@@ -461,7 +461,7 @@ locals {
     }
   }
   cognito = {
-    hosted_domain_prefix          = "binbon-dev-995192978674"
+    hosted_domain_prefix          = "binbon-dev-803817915623"
     custom_domain                 = null
     custom_domain_certificate_arn = null
     callback_urls                 = ["http://localhost:3000/callback"]

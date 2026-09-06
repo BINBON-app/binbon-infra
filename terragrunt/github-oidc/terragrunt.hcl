@@ -7,7 +7,7 @@ remote_state {
   }
 
   config = {
-    bucket         = "binbon-bootstrap-tfstate-20260822072816113700000001"
+    bucket         = "binbon-bootstrap-tfstate-20260906083634558300000001"
     key            = "github-oidc/terraform.tfstate"
     region         = "eu-central-1"
     encrypt        = true
