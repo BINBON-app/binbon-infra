@@ -18,7 +18,7 @@
 # Usage: AWS_PROFILE=<your-profile> ENVIRONMENT=dev REGION=eu-central-1 ./scripts/bootstrap-secrets.sh
 set -euo pipefail
 
-: "${AWS_PROFILE:?Set AWS_PROFILE to the target account's profile}"
+: "${AWS_PROFILE:?Set AWS_PROFILE to the profile for the target account}"
 ENVIRONMENT="${ENVIRONMENT:-dev}"
 REGION="${REGION:-eu-central-1}"
 PREFIX="binbon-${ENVIRONMENT}"
@@ -40,14 +40,36 @@ random_password() {
   openssl rand -base64 32 | tr -d '=+/\n' | head -c 40
 }
 
+# Use an already-exported value if there is one, otherwise prompt. Without this,
+# `read` would clobber an exported variable with whatever was typed - including
+# an empty string if the operator just pressed Enter assuming the export was
+# picked up, silently storing a blank credential.
+#   $1 = variable name, $2 = prompt text, $3 = "hidden" to mask input
+prompt_if_unset() {
+  local var="$1" prompt="$2" hidden="${3:-}"
+  if [ -n "${!var:-}" ]; then
+    echo "  using exported ${var}"
+    return
+  fi
+  if [ "$hidden" = "hidden" ]; then
+    read -r -s -p "$prompt" "$var"
+    echo
+  else
+    read -r -p "$prompt" "$var"
+  fi
+  if [ -z "${!var:-}" ]; then
+    echo "ERROR: ${var} is empty - refusing to store a blank credential." >&2
+    exit 1
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # 1. Redpanda Cloud API credentials — from https://cloud.redpanda.com,
 #    Organization Settings -> API Keys. Used only by Terraform's `redpanda`
 #    provider to manage the cluster/topics/users; never read by any service.
 # ---------------------------------------------------------------------------
-read -r -p "Redpanda Cloud client_id: " REDPANDA_CLIENT_ID
-read -r -s -p "Redpanda Cloud client_secret (hidden): " REDPANDA_CLIENT_SECRET
-echo
+prompt_if_unset REDPANDA_CLIENT_ID     "Redpanda Cloud client_id: "
+prompt_if_unset REDPANDA_CLIENT_SECRET "Redpanda Cloud client_secret (hidden): " hidden
 ARN=$(create_or_update "${PREFIX}-redpanda-cloud-api" \
   "$(printf '{"client_id":"%s","client_secret":"%s"}' "$REDPANDA_CLIENT_ID" "$REDPANDA_CLIENT_SECRET")")
 echo "  -> ${ARN}"
@@ -57,10 +79,14 @@ unset REDPANDA_CLIENT_ID REDPANDA_CLIENT_SECRET
 # 2. ClickHouse Cloud API credentials — from https://console.clickhouse.cloud,
 #    Organization -> API Keys. Used only by Terraform's `clickhouse` provider.
 # ---------------------------------------------------------------------------
-read -r -p "ClickHouse Cloud organization_id: " CH_ORG_ID
-read -r -p "ClickHouse Cloud API key: " CH_API_KEY
-read -r -s -p "ClickHouse Cloud API secret (hidden): " CH_API_SECRET
-echo
+# Accepts the CLICKHOUSE_* names (same convention as the old local secrets env
+# file) if they are already exported; otherwise prompts.
+CH_ORG_ID="${CLICKHOUSE_ORG_ID:-}"
+CH_API_KEY="${CLICKHOUSE_CLOUD_API_KEY:-}"
+CH_API_SECRET="${CLICKHOUSE_CLOUD_API_SECRET:-}"
+prompt_if_unset CH_ORG_ID    "ClickHouse Cloud organization_id: "
+prompt_if_unset CH_API_KEY   "ClickHouse Cloud API key: "
+prompt_if_unset CH_API_SECRET "ClickHouse Cloud API secret (hidden): " hidden
 ARN=$(create_or_update "${PREFIX}-clickhouse-cloud-api" \
   "$(printf '{"org_id":"%s","api_key":"%s","api_secret":"%s"}' "$CH_ORG_ID" "$CH_API_KEY" "$CH_API_SECRET")")
 echo "  -> ${ARN}"
@@ -81,7 +107,11 @@ unset CH_ADMIN_PASS
 #    Kafka-using service, matching `local.redpanda.service_users` in env.hcl.
 #    Add/remove names here if that map ever changes.
 # ---------------------------------------------------------------------------
-SERVICES="api-gateway auth-service user-service search-service feed-service notification-service analytics-service comment-service engagement-service media-service video-processing-service recommendation-service gift-service wallet-service moderation-service report-service audit-service story-service pk-service"
+#    monitoring-readonly is not an application service - it is the read-only
+#    SCRAM credential for external tooling (Kafka UI, Redpanda Console, kcat).
+#    It still needs a secret here because redpanda.hcl fetches a password for
+#    EVERY key in service_users, and that map includes it.
+SERVICES="api-gateway auth-service user-service search-service feed-service notification-service analytics-service comment-service engagement-service media-service video-processing-service recommendation-service gift-service wallet-service moderation-service report-service audit-service story-service pk-service monitoring-readonly"
 
 for svc in $SERVICES; do
   PASS=$(random_password)
