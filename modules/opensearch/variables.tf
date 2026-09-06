@@ -33,3 +33,9 @@ variable "tags" {
   type    = map(string)
   default = {}
 }
+
+variable "create_service_linked_role" {
+  description = "Create the account-global OpenSearch service-linked role. Required in a fresh AWS account; set false when another environment in the same account already created it."
+  type        = bool
+  default     = true
+}

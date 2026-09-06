@@ -25,9 +25,21 @@ resource "aws_vpc_security_group_egress_rule" "all" {
   ip_protocol       = "-1"
 }
 
+# A brand-new AWS account has no OpenSearch service-linked role, and without it
+# CreateDomain fails with "you must enable a service-linked role to give Amazon
+# OpenSearch Service permissions to access your VPC". The role is account-global
+# and can only be created once, so set create_service_linked_role = false for any
+# environment sharing an account with one that already created it.
+resource "aws_iam_service_linked_role" "opensearch" {
+  count            = var.create_service_linked_role ? 1 : 0
+  aws_service_name = "opensearchservice.amazonaws.com"
+}
+
 resource "aws_opensearch_domain" "this" {
   domain_name    = "${var.name}-search"
   engine_version = var.engine_version
+
+  depends_on = [aws_iam_service_linked_role.opensearch]
 
   cluster_config {
     instance_type          = var.instance_type
