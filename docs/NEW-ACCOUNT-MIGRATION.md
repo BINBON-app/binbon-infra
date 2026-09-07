@@ -347,6 +347,81 @@ Clients must **reconnect** — routes are pushed at connection time.
 
 ---
 
+## 14. HTTPS: certificates and the ALB
+
+Terraform does not own this, and deliberately so. ACM DNS validation needs
+records added at an external registrar (there is no Route 53 zone), so an apply
+would block indefinitely waiting for a human. `env.hcl` therefore keeps
+`alb_certificate_arn = null`, and with it null the `alb` module builds:
+
+| listener | what Terraform creates |
+|---|---|
+| `:80` | HTTP, default action = **`fixed-response 503`** |
+| `:443` | **not created at all** |
+
+Two scripts turn that into a working HTTPS front end. Run them in order, after
+the infrastructure exists.
+
+### 14a. Request the certificates
+
+```bash
+./scripts/request-certs.sh
+```
+
+It asks how many certificates you want and for each exact domain, then prints
+per certificate: **domain, status, ARN, CNAME name, CNAME value**. Add those
+CNAMEs at your DNS provider; ACM validates within minutes of them resolving.
+Re-run (or use `--wait`) until every certificate is `ISSUED` — the script exits
+non-zero while any are pending, so it is safe to chain.
+
+> [!IMPORTANT]
+> A wildcard matches exactly **one** label. `*.binbon.ch` covers
+> `dev.binbon.ch` but **not** `api.dev.binbon.ch`. Serving a host two levels
+> deep needs either `*.dev.binbon.ch` or that exact hostname — otherwise the
+> browser shows "not secure" on a name mismatch, with a perfectly valid
+> certificate for the wrong name.
+
+> [!NOTE]
+> Keep the validation CNAMEs in DNS permanently. ACM re-checks them at renewal,
+> so deleting them after issuance breaks auto-renewal about 13 months later.
+
+### 14b. Configure the ALB
+
+```bash
+./scripts/configure-alb.sh \
+    --default-cert <arn> \
+    --sni-cert     <arn>
+```
+
+`request-certs.sh` prints this command with the ARNs already filled in. The
+script is idempotent and supports `--dry-run`. It sets:
+
+- `:443` HTTPS with the default certificate, TLS policy, and a default forward
+  to the api-gateway target group
+- the second certificate attached over **SNI** (an ALB serves several)
+- a `/api/*` rule at priority 2 forwarding to api-gateway
+- `:80` redirecting **301** to HTTPS
+
+> [!WARNING]
+> These changes are invisible to Terraform. Running `terragrunt apply` on the
+> `alb` component afterwards reverts `:80` to the 503 fixed-response and leaves
+> `:443` orphaned. **Re-run `configure-alb.sh` after any `alb` apply.**
+
+### Verifying
+
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' https://<host>/health   # expect 200
+```
+
+`/health` is served by api-gateway itself and is the only endpoint reachable
+from a browser address bar. Application routes live under `/api/v1/...` and are
+mostly POST-only, so a `404` or `405` from a browser is normal and is not an ALB
+fault. Tell the layers apart by the response body: the gateway returns its own
+JSON envelope (`{"error":{"code":"NOT_FOUND",...}}`), an upstream service
+returns an empty-bodied 404, and a genuine ALB failure is a raw 502/503.
+
+---
+
 ## Post-migration notes
 
 - **SASL mechanism.** The backend supports `SCRAM-SHA-256` (default),
