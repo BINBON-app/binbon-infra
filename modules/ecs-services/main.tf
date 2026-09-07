@@ -2,6 +2,31 @@
 data "aws_region" "current" {
 }
 
+# Resolve each service's Redpanda password secret by NAME.
+#
+# Secrets Manager appends a random six-character suffix to every ARN, so the
+# ARNs are valid in exactly one account: carrying them as literals in env.hcl
+# meant 19 entries that had to be read back out of AWS and rewritten by hand on
+# every migration. The names are deterministic - "<prefix><redpanda_user>" - so
+# a lookup makes this account-agnostic and the entries disappear from env.hcl.
+locals {
+  redpanda_password_services = var.redpanda_secret_name_prefix == null ? {} : {
+    for name, svc in var.services :
+    name => svc.redpanda_user
+    if svc.redpanda_user != null
+  }
+
+  redpanda_password_arns = {
+    for name, _ in local.redpanda_password_services :
+    name => { REDPANDA_SASL_PASSWORD = data.aws_secretsmanager_secret.redpanda[name].arn }
+  }
+}
+
+data "aws_secretsmanager_secret" "redpanda" {
+  for_each = local.redpanda_password_services
+  name     = "${var.redpanda_secret_name_prefix}${each.value}"
+}
+
 resource "aws_ecs_cluster" "this" {
   name = var.name
 
@@ -258,7 +283,10 @@ resource "aws_ecs_task_definition" "this" {
       ]
 
       secrets = [
-        for k, v in each.value.secret_arns : {
+        for k, v in merge(
+          each.value.secret_arns,
+          lookup(local.redpanda_password_arns, each.key, {}),
+        ) : {
           name      = k
           valueFrom = v
         }

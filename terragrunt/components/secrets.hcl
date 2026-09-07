@@ -60,7 +60,7 @@ dependency "foundation" {
 dependency "data" {
   config_path = "../data"
   mock_outputs = {
-    aurora_endpoint = "mock", aurora_secret_arn = "arn:aws:secretsmanager:eu-central-1:123456789012:secret:mock", redis_endpoint = "mock",
+    aurora_endpoint = "mock", aurora_secret_arn = "arn:aws:secretsmanager:eu-central-1:123456789012:secret:mock", aurora_cluster_arn = "arn:aws:rds:eu-central-1:123456789012:cluster:mock", redis_endpoint = "mock",
     keyspace_name = "mock", keyspaces_endpoint = "mock:9142", keyspaces_username = "mock", keyspaces_password = "mock"
   }
   mock_outputs_allowed_terraform_commands = ["init", "validate", "plan", "destroy"]
@@ -96,7 +96,8 @@ inputs = {
   kms_key_arn = dependency.foundation.outputs.kms_key_arn
 
   aurora_endpoint   = dependency.data.outputs.aurora_endpoint
-  aurora_secret_arn = dependency.data.outputs.aurora_secret_arn
+  aurora_secret_arn  = dependency.data.outputs.aurora_secret_arn
+  aurora_cluster_arn = dependency.data.outputs.aurora_cluster_arn
   redis_endpoint    = dependency.data.outputs.redis_endpoint
 
   # database-per-service (see deploy/compose/postgres-init/01-create-databases.sql

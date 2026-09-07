@@ -66,3 +66,50 @@ resource "aws_secretsmanager_secret_version" "infra" {
   secret_id     = aws_secretsmanager_secret.infra.id
   secret_string = jsonencode(local.infra_secrets)
 }
+
+# Create one database per service inside the Aurora cluster.
+#
+# Aurora comes up with a single database (aurora_database_name); each service
+# expects its own, named in postgres_service_databases and baked into the
+# DATABASE_URL composed above. Those databases used to be created by hand, so a
+# fresh account brought up 20 crash-looping services with no hint in the
+# codebase that the step existed. Deriving them from the same map that builds
+# the URLs keeps the two from ever disagreeing.
+#
+# The RDS Data API is used rather than the postgresql provider because Aurora
+# sits in a private subnet: a provider connection would fail for anyone not on
+# the VPN, whereas the Data API goes over the AWS API plane. The cost is a
+# dependency on the AWS CLI wherever Terraform runs.
+#
+# CREATE DATABASE cannot run inside a transaction, so it is issued on its own.
+# The || true swallows the duplicate error, which makes re-apply idempotent.
+resource "terraform_data" "service_database" {
+  for_each = var.create_service_databases ? var.postgres_service_databases : {}
+
+  # Recreate only if the database name itself changes; renaming a service's
+  # database is a data migration, not something to trigger silently.
+  triggers_replace = [each.value]
+
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-EOT
+      set -uo pipefail
+      out=$(aws rds-data execute-statement \
+              --region "${data.aws_region.current.name}" \
+              --resource-arn "${var.aurora_cluster_arn}" \
+              --secret-arn "${var.aurora_secret_arn}" \
+              --database postgres \
+              --sql 'CREATE DATABASE "${each.value}"' 2>&1) || {
+        if printf '%s' "$out" | grep -qi 'already exists'; then
+          echo 'database ${each.value} already exists'
+          exit 0
+        fi
+        printf 'failed to create database ${each.value}: %s\n' "$out" >&2
+        exit 1
+      }
+      echo 'created database ${each.value}'
+    EOT
+  }
+}
+
+data "aws_region" "current" {}

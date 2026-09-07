@@ -19,7 +19,7 @@ has caused a full-fleet outage when forgotten:
 
 | Gap | Symptom if skipped | Fixed by |
 |---|---|---|
-| Per-service Postgres databases | All 20 Postgres services crash-loop: `database "binbon_x" does not exist` | `scripts/db-bootstrap.sh` |
+| ACM certificates + HTTPS listener | No `:443` at all; `:80` returns a 503 fixed-response | `request-certs.sh` → `configure-alb.sh` (step 14) |
 | OpenSearch service-linked role | `CreateDomain` fails: *must enable a service-linked role* | Re-run the apply (see step 7) |
 | OpenVPN Marketplace subscription | VPN instance fails to launch | Accept in the Marketplace console |
 | GitHub repo variables/secrets | CI pushes images to the *old* account | Set them by hand (step 10) |
@@ -145,31 +145,13 @@ export CLICKHOUSE_ORG_ID=... CLICKHOUSE_CLOUD_API_KEY=... CLICKHOUSE_CLOUD_API_S
 Anything not exported is prompted for interactively; a blank value is refused
 rather than silently stored.
 
-### 6a. Repatch the Redpanda secret ARNs
-
-`env.hcl` stores **literal ARNs**, and Secrets Manager appends a random 6-character
-suffix to every new secret. The 19 `REDPANDA_SASL_PASSWORD` ARNs will therefore all
-be wrong. Read the real ARNs back from AWS rather than transcribing them — for each
-service, `aws secretsmanager describe-secret --secret-id binbon-dev-redpanda-<service>
---query ARN` and substitute.
-
-Anchor the match on the full service name plus `-`, or `user-service` will also
-match `video-processing-service`.
-
-Then confirm every ARN in the file resolves:
-
-```bash
-grep -oE 'arn:aws:secretsmanager:[^"]+' terragrunt/envs/dev/eu-central-1/env.hcl \
-  | sort -u \
-  | while read -r a; do
-      aws secretsmanager describe-secret --secret-id "$a" --region eu-central-1 \
-        >/dev/null 2>&1 || echo "MISSING: $a"
-    done
-```
-
-> [!TIP]
-> Making these ARNs dynamic (a `data` lookup instead of a literal) would remove
-> this whole step. It is the single most annoying part of an account move.
+Nothing further is needed here. The per-service Redpanda password ARNs used to be
+literals in `env.hcl` and all 19 had to be read back out of AWS and substituted by
+hand at this point — Secrets Manager appends a random six-character suffix, so an
+ARN is valid in exactly one account. The `ecs-services` module now resolves them by
+**name** instead (`binbon-<env>-redpanda-<redpanda_user>`, which is deterministic),
+driven by `redpanda_secret_name_prefix`, so `env.hcl` carries no Secrets Manager
+ARNs at all and this step no longer exists.
 
 ---
 
@@ -201,21 +183,33 @@ Expect roughly **470 resources** and 30–45 minutes; Aurora and OpenSearch domi
 
 ---
 
-## 8. Create the per-service databases
+## 8. Confirm the per-service databases exist
 
-**This is the step that is easiest to forget and hardest to diagnose.** Aurora is
-created with a single database (`app`); the design is database-per-service, and
-those 20 databases are not in Terraform. Without them every Postgres-backed
-service crash-loops on `database "binbon_x" does not exist` and the ECS deployment
-circuit breaker trips.
+Aurora is created with a single database (`app`), but the design is
+database-per-service so each service's sqlx migration history stays independent.
+The `secrets` component creates those 20 databases as part of its apply
+(`terraform_data.service_database`, driven by `postgres_service_databases` — the
+same map that composes each `DATABASE_URL`), so step 7 has already done this.
+
+Verify rather than assume:
 
 ```bash
-./scripts/db-bootstrap.sh          # dry run — lists what is missing
-./scripts/db-bootstrap.sh --apply  # create them
+./scripts/db-bootstrap.sh    # read-only; lists required vs existing
 ```
 
-It works over the RDS Data API (`enable_http_endpoint = true` on the cluster), so
-no VPN or private-subnet access is needed.
+Expect *"Nothing missing - every required database already exists."*
+
+> [!NOTE]
+> This used to be a manual step, and forgetting it brought up a fresh account
+> with **20 crash-looping services** reporting `database "binbon_x" does not
+> exist` — with nothing in the codebase indicating the step existed. It is now
+> in Terraform; `db-bootstrap.sh` is kept as a diagnostic and as a way to create
+> the databases without a full apply.
+
+Creation goes over the RDS Data API (`enable_http_endpoint = true`), so no VPN or
+private-subnet access is needed — but it does mean **the AWS CLI must be present
+wherever `terragrunt apply` runs**. Set `create_service_databases = false` to opt
+out.
 
 ---
 

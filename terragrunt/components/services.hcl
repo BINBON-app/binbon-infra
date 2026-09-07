@@ -198,5 +198,7 @@ inputs = {
     })
   }
 
+  redpanda_secret_name_prefix = "binbon-${local.env.locals.environment}-redpanda-"
+
   tags = local.tags
 }

@@ -26,3 +26,7 @@ output "keyspaces_password" {
   value     = aws_iam_service_specific_credential.keyspaces.service_password
   sensitive = true
 }
+output "aurora_cluster_arn" {
+  description = "Cluster ARN, needed to run admin SQL over the RDS Data API."
+  value       = aws_rds_cluster.aurora.arn
+}
