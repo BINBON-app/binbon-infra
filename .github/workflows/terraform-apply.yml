@@ -4,6 +4,22 @@ name: Terraform Apply
 # from application deploys (see ci-templates/monorepo for those). Targets a
 # GitHub Environment matching the chosen environment, so staging/prod required
 # reviewers gate the apply.
+#
+# STANDING UP AN ENVIRONMENT FROM SCRATCH
+# ---------------------------------------
+# With stack = "all" and action = "apply" this builds the entire stack. Four
+# things are deliberately NOT done here:
+#
+#   1. terragrunt/bootstrap (the state bucket + lock table). It keeps LOCAL
+#      state, which a runner throws away, so it must be applied from a
+#      workstation once per account before this workflow can do anything.
+#   2. The OpenVPN AMI Marketplace subscription — AWS offers no API to accept
+#      Marketplace terms.
+#   3. scripts/request-certs.sh — ACM DNS validation needs records added at an
+#      external registrar, so an apply would block forever waiting for a human.
+#   4. scripts/configure-alb.sh — depends on (3).
+#
+# Everything else, including the per-service databases, is applied here.
 
 on:
   workflow_dispatch:
@@ -14,7 +30,7 @@ on:
         options: [dev, staging, prod]
         required: true
       stack:
-        description: "Directory under envs/<environment>/eu-central-1/ (e.g. 'services', 'data'), or 'all' for run-all"
+        description: "Directory under envs/<environment>/eu-central-1/ (e.g. 'services', 'data'), or 'all' for the whole stack"
         required: true
         default: "all"
       action:
@@ -25,6 +41,12 @@ on:
 permissions:
   id-token: write
   contents: read
+
+concurrency:
+  # Terragrunt takes a DynamoDB lock per state file; two overlapping runs would
+  # queue on it and one would time out mid-apply. Serialise per environment.
+  group: terraform-${{ inputs.environment }}
+  cancel-in-progress: false
 
 jobs:
   terragrunt:
@@ -45,21 +67,66 @@ jobs:
 
       - name: Install Terragrunt
         run: |
-          curl -Lo /tmp/terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/v1.1.1/terragrunt_linux_amd64
+          curl -Lo /tmp/terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/v1.1.2/terragrunt_linux_amd64
           sudo install -m 0755 /tmp/terragrunt /usr/local/bin/terragrunt
 
-      - name: Terragrunt ${{ inputs.action }}
+      - name: Check prerequisites
         run: |
           set -euo pipefail
-          APPROVE_FLAG=""
-          if [ "${{ inputs.action }}" = "apply" ]; then
-            APPROVE_FLAG="-auto-approve"
+          # The secrets component creates the per-service databases through the
+          # RDS Data API via a local-exec, so the runner needs the AWS CLI. It is
+          # preinstalled on ubuntu-latest; fail loudly rather than halfway through
+          # an apply if that ever changes.
+          command -v aws >/dev/null || { echo "::error::aws CLI is required"; exit 1; }
+          terragrunt --version
+          terraform version
+          aws sts get-caller-identity --query '[Account,Arn]' --output text
+
+      - name: Terragrunt ${{ inputs.action }}
+        env:
+          # Terragrunt v1 renamed the old --terragrunt-* flags; the environment
+          # form is stable and keeps the command line readable.
+          TG_NON_INTERACTIVE: "true"
+        run: |
+          set -uo pipefail
+
+          ACTION="${{ inputs.action }}"
+          STACK="${{ inputs.stack }}"
+          ENVIRONMENT="${{ inputs.environment }}"
+
+          APPROVE=""
+          if [ "$ACTION" = "apply" ]; then
+            APPROVE="-auto-approve"
           fi
 
-          if [ "${{ inputs.stack }}" = "all" ]; then
-            cd "terragrunt/envs/${{ inputs.environment }}/eu-central-1"
-            terragrunt run-all ${{ inputs.action }} -input=false $APPROVE_FLAG
-          else
-            cd "terragrunt/envs/${{ inputs.environment }}/eu-central-1/${{ inputs.stack }}"
-            terragrunt ${{ inputs.action }} -input=false $APPROVE_FLAG
+          # Terragrunt v1 replaced "run-all <cmd>" with "run --all -- <cmd>".
+          # The old spelling is not a valid command and exits with generic usage.
+          run_stack() {
+            if [ "$STACK" = "all" ]; then
+              cd "terragrunt/envs/${ENVIRONMENT}/eu-central-1"
+              terragrunt run --all --non-interactive -- "$ACTION" -input=false $APPROVE
+            else
+              cd "terragrunt/envs/${ENVIRONMENT}/eu-central-1/${STACK}"
+              terragrunt --non-interactive "$ACTION" -input=false $APPROVE
+            fi
+          }
+
+          run_stack && exit 0
+          rc=$?
+
+          # A first apply into a brand-new account fails once on OpenSearch:
+          # CreateDomain refuses until the account has the OpenSearch
+          # service-linked role, and that failed call is itself what makes AWS
+          # create it. The second pass then succeeds, and everything downstream
+          # of opensearch in the DAG (secrets, services) runs for the first time.
+          # Only worth retrying for a full apply - a targeted stack or a plan
+          # failing means something else.
+          if [ "$ACTION" = "apply" ] && [ "$STACK" = "all" ]; then
+            echo "::warning::First pass failed (rc=$rc). Retrying once - a fresh account fails on the OpenSearch service-linked role by design."
+            cd "$GITHUB_WORKSPACE"
+            run_stack && exit 0
+            rc=$?
           fi
+
+          echo "::error::terragrunt $ACTION failed (rc=$rc)"
+          exit "$rc"

@@ -416,6 +416,83 @@ returns an empty-bodied 404, and a genuine ALB failure is a raw 502/503.
 
 ---
 
+## 15. Keeping up with password rotation
+
+Aurora's master password is RDS-managed and rotates on a schedule (7 days by
+default). Two separate things break if nothing handles it:
+
+**The composed URL goes stale.** Historically the `secrets` component baked the
+password into each `DATABASE_URL` at apply time, so every rotation required
+re-applying `secrets` and redeploying. That is fixed: services now receive
+`DB_HOST`/`DB_PORT`/`DB_NAME` plus `DB_USER`/`DB_PASSWORD` wired straight to the
+RDS-managed secret, and `shared::config::database_url` composes the URL in-process.
+ECS resolves those at task start, so a rotation needs **no Terraform apply**.
+
+**Running tasks keep the old password.** ECS injects secrets only at task start.
+Existing pooled connections survive a rotation — Postgres does not drop live
+sessions — but every new connection fails with `password authentication failed`.
+This is silent: the HTTP listener is unaffected, the health check passes, and the
+service reports healthy while background work that opens fresh connections (the
+outbox relay, pool growth) fails continuously.
+
+`.github/workflows/rotation-restart.yml` closes that gap. It runs daily and
+restarts only the services whose task predates the last rotation:
+
+```bash
+./scripts/restart-stale-db-tasks.sh          # report
+./scripts/restart-stale-db-tasks.sh --apply  # restart the stale ones
+```
+
+> [!NOTE]
+> It is condition-driven, not date-driven, on purpose. AWS rotates within a
+> window rather than at a fixed interval — one observed gap was 7d17h, not 7d —
+> so a schedule pinned to the expected rotation day drifts and eventually fires
+> *before* the rotation it was meant to follow. Running daily is a no-op on quiet
+> days and self-heals after an off-cycle or manual rotation.
+
+The script reports each service's password source and refuses to pretend a
+restart helps one that still has a pre-composed `DATABASE_URL` — restarting such
+a task just restarts it into the same stale value.
+
+---
+
+## 16. Applying from CI instead of a workstation
+
+`.github/workflows/terraform-apply.yml` (manual dispatch: environment, stack,
+plan/apply) builds the whole stack with `stack = all`, `action = apply`.
+
+**Prerequisites**
+
+| | |
+|---|---|
+| IAM role | `binbon-github-terraform-apply` — created by `terragrunt/github-oidc` |
+| Repo variable | `AWS_TERRAFORM_APPLY_ROLE_ARN` must hold that role's ARN |
+
+Without the variable the workflow fails at the credentials step.
+
+**What it still cannot do**, and why:
+
+1. **`terragrunt/bootstrap`** — it keeps **local** state, which a runner discards.
+   Apply it from a workstation once per account before using this workflow.
+2. **The OpenVPN AMI Marketplace subscription** — AWS exposes no API to accept
+   Marketplace terms.
+3. **`scripts/request-certs.sh`** — ACM DNS validation needs records at an
+   external registrar, so an apply would block indefinitely.
+4. **`scripts/configure-alb.sh`** — depends on (3).
+
+Everything else, including the per-service databases, runs in the workflow.
+
+> [!IMPORTANT]
+> Terragrunt v1 replaced `run-all <cmd>` with `run --all -- <cmd>`. The old
+> spelling is not a valid command and exits with generic usage text rather than
+> an obvious error, which reads like the workflow did nothing.
+
+A full apply into a **fresh** account fails once on the OpenSearch service-linked
+role (see step 7); the workflow retries automatically for `stack = all` +
+`apply`, since that failed call is what makes AWS create the role.
+
+---
+
 ## Post-migration notes
 
 - **SASL mechanism.** The backend supports `SCRAM-SHA-256` (default),

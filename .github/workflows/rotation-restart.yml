@@ -1,0 +1,81 @@
+name: Restart tasks after password rotation
+
+# Aurora's master password is RDS-managed and rotates on a schedule. ECS injects
+# secrets at TASK START, so a task running since before a rotation still holds
+# the old password: existing pooled connections survive, but every new one fails
+# with "password authentication failed". The HTTP listener is unaffected, so the
+# service reports healthy while background work that opens fresh connections
+# (the outbox relay, pool growth) fails continuously - a silent failure that
+# nothing alarms on.
+#
+# This restarts only the services whose task predates the last rotation.
+#
+# It runs DAILY and is condition-driven rather than date-driven. AWS rotates
+# within a window rather than at a fixed interval - one observed gap was 7d17h,
+# not 7d - so a schedule pinned to the expected rotation day drifts out of
+# alignment and eventually fires before the rotation it was meant to follow. On
+# the days nothing rotated this is a no-op, and it self-heals after an off-cycle
+# or manual rotation too.
+
+on:
+  schedule:
+    # 05:30 UTC daily. The observed rotation window is around 00:00 UTC, so this
+    # lands a few hours after, with the daily cadence covering any drift.
+    # GitHub's scheduled runs are best-effort and can be delayed under load; for
+    # tighter bounds, drive scripts/restart-stale-db-tasks.sh from an EventBridge
+    # rule on the rotation event instead.
+    - cron: "30 5 * * *"
+
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        type: choice
+        options: [dev, staging, prod]
+        default: dev
+        required: true
+      mode:
+        description: "report = show what would restart; apply = actually restart"
+        type: choice
+        options: [report, apply]
+        default: report
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  # Never let two restart sweeps overlap: each one triggers rolling deployments,
+  # and a second sweep would see tasks mid-roll and restart them again.
+  group: rotation-restart-${{ inputs.environment || 'dev' }}
+  cancel-in-progress: false
+
+jobs:
+  restart:
+    runs-on: ubuntu-latest
+    # Scheduled runs always target dev. staging/prod are reachable only by a
+    # manual dispatch, so their GitHub Environment reviewers still gate them.
+    environment: ${{ inputs.environment || 'dev' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_TERRAFORM_APPLY_ROLE_ARN }}
+          aws-region: eu-central-1
+
+      - name: Restart tasks older than the last password rotation
+        env:
+          ENVIRONMENT: ${{ inputs.environment || 'dev' }}
+          # A scheduled run restarts; a manual run defaults to reporting so it is
+          # safe to trigger just to look.
+          MODE: ${{ inputs.mode || 'apply' }}
+        run: |
+          chmod +x scripts/restart-stale-db-tasks.sh
+          if [ "$MODE" = "apply" ]; then
+            ./scripts/restart-stale-db-tasks.sh --env "$ENVIRONMENT" --apply
+          else
+            ./scripts/restart-stale-db-tasks.sh --env "$ENVIRONMENT"
+          fi
