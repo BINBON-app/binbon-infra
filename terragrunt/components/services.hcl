@@ -139,7 +139,7 @@ dependency "redpanda" {
 }
 dependency "secrets" {
   config_path = "../secrets"
-  mock_outputs = { secret_arn = "arn:aws:secretsmanager:eu-central-1:123456789012:secret:mock"
+  mock_outputs = { secret_arn = "arn:aws:secretsmanager:eu-central-1:123456789012:secret:mock", service_databases = {}
   }
   mock_outputs_allowed_terraform_commands = ["init", "validate", "plan", "destroy"]
 }
@@ -183,17 +183,36 @@ inputs = {
           # a permissions error - must be forced false against Keyspaces.
           MIGRATE_ON_START = "false"
         } : {},
-        lookup(local.internal_service_urls, name, {})
+        lookup(local.internal_service_urls, name, {}),
+        # Postgres connection is handed over as DISCRETE PARTS, not as a
+        # pre-composed DATABASE_URL. The app composes the URL itself (see
+        # shared::config::database_url).
+        #
+        # A composed URL has the password baked in at apply time, and RDS rotates
+        # the master password on a 7-day schedule - so every copy goes stale on
+        # rotation and services fail with "password authentication failed"
+        # until `terragrunt apply` regenerates them. Passing the password as its
+        # own secret lets ECS resolve it from the live RDS-managed secret at task
+        # start, so a rotation costs a restart instead of an apply.
+        contains(keys(dependency.secrets.outputs.service_databases), name) ? {
+          DB_HOST = dependency.data.outputs.aurora_endpoint
+          DB_PORT = "5432"
+          DB_NAME = dependency.secrets.outputs.service_databases[name]
+        } : {}
       )
       secret_arns = merge(
         service.secret_arns,
         {
           for key in lookup(local.service_secret_keys, name, []) :
-          # DATABASE_URL is stored per-service (DATABASE_URL_<service>) in the
-          # shared secret, since each service owns its own database - see
-          # postgres_service_databases in components/secrets.hcl.
-          key => key == "DATABASE_URL" ? "${dependency.secrets.outputs.secret_arn}:DATABASE_URL_${name}::" : "${dependency.secrets.outputs.secret_arn}:${key}::"
-        }
+          key => "${dependency.secrets.outputs.secret_arn}:${key}::"
+          if key != "DATABASE_URL"
+        },
+        # Straight from the RDS-managed master secret, so these always resolve to
+        # the CURRENT credentials rather than a snapshot of them.
+        contains(keys(dependency.secrets.outputs.service_databases), name) ? {
+          DB_USER     = "${dependency.data.outputs.aurora_secret_arn}:username::"
+          DB_PASSWORD = "${dependency.data.outputs.aurora_secret_arn}:password::"
+        } : {}
       )
     })
   }
