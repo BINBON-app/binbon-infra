@@ -16,6 +16,11 @@ resource "aws_iam_openid_connect_provider" "github" {
 locals {
   ecr_resource = "arn:${data.aws_partition.current.partition}:ecr:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:repository/${var.name}-*"
   iam_role_resource = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/${var.name}-*"
+
+  # IAM users and instance profiles are distinct resource types: the role ARN
+  # pattern above does not cover them, so each needs its own scoped statement.
+  iam_user_resource             = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:user/${var.name}-*"
+  iam_instance_profile_resource = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:instance-profile/${var.name}-*"
 }
 
 data "aws_iam_policy_document" "ecs_deploy_trust" {
@@ -161,6 +166,53 @@ resource "aws_iam_role_policy" "terraform_apply_iam" {
           "iam:PassRole"
         ]
         Resource = local.iam_role_resource
+      },
+      {
+        # The stack creates IAM USERS as well as roles - the media bucket's
+        # access-key user and the Keyspaces user, both of which need
+        # service-specific credentials that a role cannot hold. Without this the
+        # plan fails on iam:GetUser long before it reaches an apply.
+        Sid    = "ManageAppUsers"
+        Effect = "Allow"
+        Action = [
+          "iam:CreateUser",
+          "iam:DeleteUser",
+          "iam:GetUser",
+          "iam:TagUser",
+          "iam:UntagUser",
+          "iam:PutUserPolicy",
+          "iam:DeleteUserPolicy",
+          "iam:GetUserPolicy",
+          "iam:ListUserPolicies",
+          "iam:ListAttachedUserPolicies",
+          "iam:ListGroupsForUser",
+          "iam:CreateAccessKey",
+          "iam:DeleteAccessKey",
+          "iam:ListAccessKeys",
+          "iam:CreateServiceSpecificCredential",
+          "iam:DeleteServiceSpecificCredential",
+          "iam:ListServiceSpecificCredentials",
+          "iam:ResetServiceSpecificCredential"
+        ]
+        Resource = local.iam_user_resource
+      },
+      {
+        # The VPN instance carries an instance profile so Session Manager can
+        # reach it without an SSH key. An instance profile is its own IAM
+        # resource type, not covered by the role ARN pattern above.
+        Sid    = "ManageInstanceProfiles"
+        Effect = "Allow"
+        Action = [
+          "iam:CreateInstanceProfile",
+          "iam:DeleteInstanceProfile",
+          "iam:GetInstanceProfile",
+          "iam:AddRoleToInstanceProfile",
+          "iam:RemoveRoleFromInstanceProfile",
+          "iam:TagInstanceProfile",
+          "iam:UntagInstanceProfile",
+          "iam:ListInstanceProfilesForRole"
+        ]
+        Resource = local.iam_instance_profile_resource
       },
       {
         Sid      = "ServiceLinkedRoles"
