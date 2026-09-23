@@ -145,6 +145,33 @@ export CLICKHOUSE_ORG_ID=... CLICKHOUSE_CLOUD_API_KEY=... CLICKHOUSE_CLOUD_API_S
 Anything not exported is prompted for interactively; a blank value is refused
 rather than silently stored.
 
+> [!CAUTION]
+> **Run this once, on a fresh account only. Never re-run it against an account
+> that is already serving.** It doesn't skip existing secrets: `create_or_update`
+> falls through to `update-secret` and overwrites each one with a fresh random
+> value. On a running account that means:
+>
+> | secret | what breaks |
+> |---|---|
+> | 20 `binbon-<env>-redpanda-<service>` passwords | Redpanda users are set with `password_wo` and a static `password_wo_version = 1`, so Terraform never pushes the new value to the cluster. Secrets Manager and Redpanda disagree, and **every Kafka service fails authentication** on its next start. |
+> | ClickHouse admin password | the same write-only mechanism, so analytics can't connect. |
+> | `JWT_SECRET` | every token already issued stops validating — **every user is logged out**, and during the rollout, services that have and haven't restarted disagree. |
+> | `INTERNAL_API_KEY` | service-to-service calls fail until the whole fleet has restarted onto the new value. |
+>
+> To add a secret for **one new service** on an existing account, create just that
+> secret, and only if it's absent. That's how chat-service's Redpanda secret was
+> added:
+>
+> ```bash
+> NAME=binbon-dev-redpanda-<service>
+> aws secretsmanager describe-secret --secret-id "$NAME" >/dev/null 2>&1 \
+>   || aws secretsmanager create-secret --name "$NAME" \
+>        --secret-string "$(openssl rand -base64 32 | tr -d '=+/\n' | head -c 40)"
+> ```
+>
+> Then add the service to `bootstrap-secrets.sh`'s `SERVICES` list so the next
+> *fresh* account gets it too.
+
 Nothing further is needed here. The per-service Redpanda password ARNs used to be
 literals in `env.hcl` and all 19 had to be read back out of AWS and substituted by
 hand at this point — Secrets Manager appends a random six-character suffix, so an
