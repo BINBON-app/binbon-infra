@@ -591,7 +591,7 @@ locals {
         }, group_permissions = {
         }, cluster_permissions = []
       }
-      "recommendation-service" = { password_wo_version = 1, topic_permissions = { "video.events" = ["READ", "DESCRIBE"]
+      "recommendation-service" = { password_wo_version = 1, topic_permissions = { "video.events" = ["READ", "DESCRIBE"], "post.events" = ["READ", "DESCRIBE"]
         }, group_permissions = {
         }, cluster_permissions = []
       }
@@ -624,7 +624,7 @@ locals {
       # the story, media, relationship, follow and moderation streams. No group
       # ACLs: rskafka reads partitions directly rather than joining a consumer
       # group, so the chat-* names are internal labels, not Kafka groups.
-      "chat-service" = { password_wo_version = 1, topic_permissions = { "message.events" = ["WRITE", "READ", "DESCRIBE"], "notification.events" = ["WRITE", "DESCRIBE"], "story.events" = ["READ", "DESCRIBE"], "media.events" = ["READ", "DESCRIBE"], "relationship.events" = ["READ", "DESCRIBE"], "follow.events" = ["READ", "DESCRIBE"], "moderation.events" = ["READ", "DESCRIBE"]
+      "chat-service" = { password_wo_version = 1, topic_permissions = { "message.events" = ["WRITE", "READ", "DESCRIBE"], "notification.events" = ["WRITE", "DESCRIBE"], "story.events" = ["READ", "DESCRIBE"], "media.events" = ["READ", "DESCRIBE"], "relationship.events" = ["READ", "DESCRIBE"], "follow.events" = ["READ", "DESCRIBE"], "moderation.events" = ["WRITE", "READ", "DESCRIBE"]
         }, group_permissions = {
         }, cluster_permissions = []
       }

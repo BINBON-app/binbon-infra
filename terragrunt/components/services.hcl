@@ -66,6 +66,31 @@ env=read_terragrunt_config(find_in_parent_folders("env.hcl"))
   # TLS) - not a secret, just a fixed config flag.
   scylla_services = ["feed-service", "engagement-service", "comment-service", "story-service", "chat-service"]
 
+  # Services whose /health fails while they have NEVER reached the broker
+  # (HEALTH_REQUIRES_KAFKA - see the backend's events::health). A service with no
+  # Redpanda account used to deploy as "healthy" while every message send
+  # returned 503; with this, the ECS health check fails, the deployment circuit
+  # breaker rolls it back, and the deploy goes red instead.
+  #
+  # An EXPLICIT list, not "every service with a Redpanda user", on purpose:
+  # api-gateway holds Redpanda credentials but never connects - it is a pure
+  # proxy - so gating it would make it report "never connected" forever and
+  # have ECS kill the gateway in a loop. Every service here opens a broker
+  # connection at startup (a warm-up, the outbox relay, or a consumer loop),
+  # which is what makes "never connected" mean "misconfigured" rather than
+  # "has not needed Kafka yet". Only add a service after confirming that.
+  #
+  # Only the first connection matters. A broker blip after a successful connect
+  # never fails /health, because the ECS check has kill semantics and failing it
+  # would recycle the whole fleet on a Redpanda restart.
+  kafka_health_services = [
+    "analytics-service", "audit-service", "auth-service", "chat-service",
+    "comment-service", "engagement-service", "feed-service", "gift-service",
+    "media-service", "moderation-service", "notification-service", "pk-service",
+    "recommendation-service", "report-service", "search-service", "story-service",
+    "user-service", "video-processing-service", "wallet-service",
+  ]
+
   # The few services that make a synchronous HTTP/gRPC call to another
   # service (see binbon-backend-inventory.xlsx "Service Dependency Matrix"),
   # pointed at that service's ECS Service Connect DNS name
@@ -198,6 +223,10 @@ inputs = {
           DB_HOST = dependency.data.outputs.aurora_endpoint
           DB_PORT = "5432"
           DB_NAME = dependency.secrets.outputs.service_databases[name]
+        } : {},
+        # See kafka_health_services above for why this is an explicit list.
+        contains(local.kafka_health_services, name) ? {
+          HEALTH_REQUIRES_KAFKA = "true"
         } : {}
       )
       secret_arns = merge(
