@@ -273,13 +273,30 @@ root cause is fixed — it will not retry on its own.
 A clean result is every service `OK` with `runningCount == desiredCount` and
 rollout `COMPLETED`.
 
+**What `HEALTHY` proves about Kafka.** For the 19 services that set
+`HEALTH_REQUIRES_KAFKA` (see step 17), ECS `HEALTHY` now means the service
+**reached the broker and authenticated at least once**: `/health` returns 503
+until it has. A fresh account with wrong or missing Redpanda credentials
+therefore shows up here as services that never go healthy and deployments that
+roll back, rather than as a green fleet that silently can't publish.
+
 > [!WARNING]
-> ECS "healthy" does **not** prove broker connectivity. The events crate's
-> `warm()` has a 5-second timeout and deliberately does not block startup, so a
-> producer reports healthy while silently failing to reach Redpanda. Confirm with
-> `kafka-check.sh` (look for `rskafka::connection::topology: New broker`, which
-> only appears after a successful SASL handshake) or with consumer-group activity
-> on the cluster.
+> `HEALTHY` still does **not** prove the per-topic ACLs are right. A service that
+> authenticates but lacks READ or WRITE on one of its topics connects fine,
+> passes the check, and then fails with `TopicAuthorizationFailed` — silently,
+> because its consumer just retries. recommendation-service ran like that at
+> ~6,700 errors an hour with a healthy status. Check for it directly:
+>
+> ```bash
+> ./scripts/kafka-check.sh dev 30    # TopicAuthorizationFailed, SASL errors
+> ```
+>
+> Before a deploy, the consistency check in step 17 catches the same class of
+> problem from the code.
+>
+> api-gateway and the 11 services that don't use Kafka are not gated, so their
+> `HEALTHY` says nothing about the broker. Consumer-group lag is no help either:
+> rskafka reads partitions directly rather than joining a Kafka consumer group.
 
 ---
 
@@ -493,6 +510,125 @@ role (see step 7); the workflow retries automatically for `stack = all` +
 
 ---
 
+## 17. Kafka topic and ACL consistency
+
+The backend and this infra live in separate repositories, and every Kafka topic
+the code uses has to exist here, with a Redpanda user for the service and an
+ACL for the direction it uses it in. Nothing used to link the two, so they
+drifted silently. A messaging change made chat-service a Kafka client; the infra
+never gave it a Redpanda account; it deployed as healthy while every message
+send returned 503. Two guards now stop that, one before merge and one at deploy.
+
+### 17a. Before merge — the consistency check
+
+`kafka-infra-check.yml` in the **backend** repo runs
+`scripts/check-kafka-infra.py` on every push to `dev` and every pull request to
+`dev`, `staging` and `master`. For each service that touches Kafka, it fails if:
+
+| gap | example message |
+|---|---|
+| a topic isn't declared | `chat-service uses topic 'message.events', which is not declared in dev env.hcl` |
+| no Redpanda user | `chat-service uses Kafka but has no Redpanda user in service_users` |
+| user not wired to the service | `... redpanda_user = None, so the task gets no REDPANDA_SASL_* credentials` |
+| missing WRITE | `chat-service produces to 'moderation.events' but has no WRITE ACL on it` |
+| missing READ | `recommendation-service consumes 'post.events' but has no READ ACL on it` |
+
+It reads `env.hcl` from this repo's `main` branch. **So for new Kafka work the
+order is infra first, then backend**: add the topic, user and ACLs here, merge,
+and only then does the backend PR pass. It's the same ordering any schema or
+credential change needs.
+
+Run it locally from the backend repo, pointing `--infra` at your checkout of
+this one (whatever its directory is called locally):
+
+```bash
+python3 scripts/check-kafka-infra.py --infra ../binbon-aws-terraform-complete --env dev
+```
+
+> [!NOTE]
+> Topic use is inferred from the code, and the rules are deliberately narrow —
+> emit, outbox and publish calls for producers; consumer entry points, consumer
+> tables and consumer modules for consumers; test modules ignored. A broader
+> "any mention of a topic" rule was tried first and granted permissions wrong in
+> both directions. If it ever flags something that isn't real, fix the rule in
+> the script rather than granting the permission.
+
+#### The token it needs
+
+The check runs in the backend repo but reads this one, which is private, and a
+workflow's built-in token can only see its own repository. It uses a repository
+secret on `official-backend-rust`:
+
+| | |
+|---|---|
+| Secret | `INFRA_REPO_TOKEN` |
+| Type | fine-grained personal access token |
+| Resource owner | `BINBON-app` |
+| Repository access | only `binbon-infra` |
+| Permission | **Contents: Read-only** |
+
+Without the secret, the job fails straight away with setup instructions instead
+of quietly skipping.
+
+> [!WARNING]
+> GitHub's error for a token that lacks **Contents** is misleading:
+> `remote: Write access to repository not granted` with a **403**, even though the
+> check only reads. *Metadata: Read-only* is added automatically, and that lets
+> the token see the repo exists but not read its files — so it looks configured
+> when it isn't. A **404** instead means the token can't see the repo at all:
+> wrong resource owner or wrong repository selected. If the org requires approval
+> for fine-grained tokens, a pending token fails the same way until an owner
+> approves it.
+
+The token belongs to whoever created it, so it **expires**, and it stops
+working if they leave the org. When it expires, the checkout step fails with the
+same 403 — renew the token, don't hunt for a gap. An org-owned GitHub App or
+machine user removes that dependency; it's the better long-term setup.
+
+This secret lives on the backend repo, not the AWS account, so moving to a new
+AWS account doesn't touch it. Recreate it only if the repositories move to a
+different GitHub org.
+
+### 17b. At deploy — the startup health gate
+
+The 19 services that open a broker connection at startup get
+`HEALTH_REQUIRES_KAFKA=true` from `kafka_health_services` in
+`terragrunt/components/services.hcl`. With it set, `/health` returns **503
+`starting`** until the process has connected to the broker at least once, and
+`/readyz` reports Kafka as required until then.
+
+A misconfigured service — no credentials, wrong credentials, no route — never
+connects, so it never passes the ECS health check. The circuit breaker rolls the
+deployment back, and the deploy fails in CI instead of going green.
+
+**Only the first connection matters.** A broker blip after a service has
+connected keeps `/health` at 200. The ECS health check has *kill* semantics:
+failing it on a Redpanda restart would recycle the whole fleet and turn a broker
+hiccup into an outage.
+
+> [!IMPORTANT]
+> **During a migration this is the step most likely to surprise you.** If
+> Redpanda credentials or networking are wrong in the new account, all 19 gated
+> services stay unhealthy and their deployments roll back. That's the gate doing
+> its job. Fix the cause — re-check steps 6 and 7, and that `redpanda-endpoint`
+> applied — rather than removing the flag.
+
+`kafka_health_services` is an **explicit list** for a reason. api-gateway holds
+Redpanda credentials but never connects, because it's a pure proxy. Gated, it
+would report "never connected" forever and ECS would kill the gateway in a loop.
+Only add a service after confirming it opens a connection at startup — a warm-up,
+the outbox relay, or a consumer loop.
+
+The safety net for the gate itself is the circuit breaker: **enabled, rollback
+on, minimum healthy 100%**. ECS starts new tasks before stopping old ones and
+rolls back if they fail, so a fault in the gate reverts a deploy rather than
+dropping one. Don't loosen those settings while the gate is on.
+
+To disable the gate for one service, remove it from `kafka_health_services` and
+apply `services`. It takes effect on that service's next deploy.
+
+---
+
 ## Post-migration notes
 
 - **SASL mechanism.** The backend supports `SCRAM-SHA-256` (default),
@@ -504,5 +640,9 @@ role (see step 7); the workflow retries automatically for `stack = all` +
   Redis command (`ZUNIONSTORE`, `MGET`, `RENAME`, …) fails with `CROSSSLOT`
   unless all its keys share a hash tag.
 - **No ERROR alerting exists.** A `tracing::error!` firing every 30 seconds went
-  unnoticed for the life of a service. A CloudWatch metric filter over the
-  `/ecs/binbon-<env>/*` log groups is worth adding.
+  unnoticed for the life of a service, and recommendation-service logged ~6,700
+  `TopicAuthorizationFailed` an hour while reporting healthy. Both were found by
+  grepping, not by an alarm. A CloudWatch metric filter over the
+  `/ecs/binbon-<env>/*` log groups is still the highest-value monitoring gap —
+  step 17's guards stop new Kafka drift, but nothing yet catches the next
+  unrelated silent failure.
