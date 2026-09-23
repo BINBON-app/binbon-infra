@@ -145,32 +145,38 @@ export CLICKHOUSE_ORG_ID=... CLICKHOUSE_CLOUD_API_KEY=... CLICKHOUSE_CLOUD_API_S
 Anything not exported is prompted for interactively; a blank value is refused
 rather than silently stored.
 
+**It's safe to re-run.** By default it only *creates* secrets that don't exist
+yet; an existing secret is left exactly as it is and reported. That makes
+re-running the way to add a secret for a **new service** on an existing account:
+add the name to the script's `SERVICES` list and run it again. It creates just
+that one, and doesn't prompt for API credentials whose secrets already exist.
+
+```
+created: 1   left untouched: 26   rotated: 0
+```
+
+It fails loudly, rather than silently falling back to an update, if a secret is
+**scheduled for deletion** — common when re-bootstrapping soon after a teardown.
+Restore the secret or wait for the deletion to finish.
+
 > [!CAUTION]
-> **Run this once, on a fresh account only. Never re-run it against an account
-> that is already serving.** It doesn't skip existing secrets: `create_or_update`
-> falls through to `update-secret` and overwrites each one with a fresh random
-> value. On a running account that means:
+> **`--force` overwrites existing secrets — and on a serving account, that is an
+> outage until you finish the rotation by hand.**
 >
-> | secret | what breaks |
+> | secret | what breaks, and what finishes the rotation |
 > |---|---|
-> | 20 `binbon-<env>-redpanda-<service>` passwords | Redpanda users are set with `password_wo` and a static `password_wo_version = 1`, so Terraform never pushes the new value to the cluster. Secrets Manager and Redpanda disagree, and **every Kafka service fails authentication** on its next start. |
-> | ClickHouse admin password | the same write-only mechanism, so analytics can't connect. |
-> | `JWT_SECRET` | every token already issued stops validating — **every user is logged out**, and during the rollout, services that have and haven't restarted disagree. |
-> | `INTERNAL_API_KEY` | service-to-service calls fail until the whole fleet has restarted onto the new value. |
+> | 20 `binbon-<env>-redpanda-<service>` | Users are set with `password_wo` and a static `password_wo_version`, so the new value never reaches Redpanda and **every Kafka service fails authentication**. Bump those users' `password_wo_version` in `env.hcl`, apply `redpanda`, redeploy. |
+> | ClickHouse admin password | The same write-only mechanism; analytics can't connect. Bump the clickhouse `password_wo_version`, apply `clickhouse`, redeploy. |
+> | `JWT_SECRET` | Every issued token stops validating — **every user is logged out**. |
+> | `INTERNAL_API_KEY` | Internal calls fail until every service has redeployed. |
 >
-> To add a secret for **one new service** on an existing account, create just that
-> secret, and only if it's absent. That's how chat-service's Redpanda secret was
-> added:
+> Because of that, `--force` shows this list, **requires typing the environment
+> prefix** (`binbon-dev`) to continue, and refuses to run without a terminal — it
+> is not something to do unattended or from CI. Typing the wrong environment
+> aborts with nothing changed. When it does rotate, it prints the follow-up.
 >
-> ```bash
-> NAME=binbon-dev-redpanda-<service>
-> aws secretsmanager describe-secret --secret-id "$NAME" >/dev/null 2>&1 \
->   || aws secretsmanager create-secret --name "$NAME" \
->        --secret-string "$(openssl rand -base64 32 | tr -d '=+/\n' | head -c 40)"
-> ```
->
-> Then add the service to `bootstrap-secrets.sh`'s `SERVICES` list so the next
-> *fresh* account gets it too.
+> The script used to behave like `--force` on every run. That is why this
+> caution exists.
 
 Nothing further is needed here. The per-service Redpanda password ARNs used to be
 literals in `env.hcl` and all 19 had to be read back out of AWS and substituted by
