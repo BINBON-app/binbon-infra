@@ -46,7 +46,7 @@ locals {
     }
     chat-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:chat-service-replace", container_port = 8094, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
       }, secret_arns = {
-      }, redpanda_user = null, task_policy_json = null
+      }, redpanda_user = "chat-service", task_policy_json = null
     }
     comment-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:comment-service-replace", container_port = 8090, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
       }, secret_arns = {
@@ -528,6 +528,22 @@ locals {
         }
         }, "pk.events" = { partitions = 2, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
         }
+        # Added for the messaging/stories/relationships work in the backend
+        # (chat-service, media-service, user-service, story-service). No
+        # replication_factor: Redpanda Serverless enforces 3 and rejects any
+        # explicit value, which mid-apply destroys the topics.
+        }, "message.events" = { partitions = 2, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
+        }
+        }, "media.events" = { partitions = 2, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
+        }
+        }, "relationship.events" = { partitions = 2, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
+        }
+        # notification.events is the notification-REQUEST bus: chat-service and
+        # story-service publish requests, notification-service consumes them.
+        }, "notification.events" = { partitions = 2, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
+        }
+        }, "audio.events" = { partitions = 2, configuration = { "cleanup.policy" = "delete", "retention.ms" = "604800000"
+        }
       }
     }
     service_users = {
@@ -539,7 +555,7 @@ locals {
         }, group_permissions = {
         }, cluster_permissions = []
       }
-      "user-service" = { password_wo_version = 1, topic_permissions = { "user.events" = ["WRITE", "READ", "DESCRIBE"], "follow.events" = ["WRITE", "DESCRIBE"]
+      "user-service" = { password_wo_version = 1, topic_permissions = { "user.events" = ["WRITE", "READ", "DESCRIBE"], "follow.events" = ["WRITE", "DESCRIBE"], "relationship.events" = ["WRITE", "DESCRIBE"]
         }, group_permissions = {
         }, cluster_permissions = []
       }
@@ -551,7 +567,7 @@ locals {
         }, group_permissions = {
         }, cluster_permissions = []
       }
-      "notification-service" = { password_wo_version = 1, topic_permissions = { "follow.events" = ["READ", "DESCRIBE"]
+      "notification-service" = { password_wo_version = 1, topic_permissions = { "follow.events" = ["READ", "DESCRIBE"], "notification.events" = ["READ", "DESCRIBE"]
         }, group_permissions = {
         }, cluster_permissions = []
       }
@@ -567,7 +583,7 @@ locals {
         }, group_permissions = {
         }, cluster_permissions = []
       }
-      "media-service" = { password_wo_version = 1, topic_permissions = { "video.events" = ["WRITE", "READ", "DESCRIBE"]
+      "media-service" = { password_wo_version = 1, topic_permissions = { "video.events" = ["WRITE", "READ", "DESCRIBE"], "media.events" = ["WRITE", "DESCRIBE"], "audio.events" = ["WRITE", "DESCRIBE"]
         }, group_permissions = {
         }, cluster_permissions = []
       }
@@ -599,7 +615,16 @@ locals {
         }, group_permissions = {
         }, cluster_permissions = []
       }
-      "story-service" = { password_wo_version = 1, topic_permissions = { "story.events" = ["WRITE", "DESCRIBE"]
+      "story-service" = { password_wo_version = 1, topic_permissions = { "story.events" = ["WRITE", "DESCRIBE"], "notification.events" = ["WRITE", "DESCRIBE"], "follow.events" = ["READ", "DESCRIBE"], "message.events" = ["READ", "DESCRIBE"], "media.events" = ["READ", "DESCRIBE"], "relationship.events" = ["READ", "DESCRIBE"]
+        }, group_permissions = {
+        }, cluster_permissions = []
+      }
+      # Produces every chat message event, and consumes its own stream for the
+      # group inbox fan-out and search indexing (chat-fanout, chat-search) plus
+      # the story, media, relationship, follow and moderation streams. No group
+      # ACLs: rskafka reads partitions directly rather than joining a consumer
+      # group, so the chat-* names are internal labels, not Kafka groups.
+      "chat-service" = { password_wo_version = 1, topic_permissions = { "message.events" = ["WRITE", "READ", "DESCRIBE"], "notification.events" = ["WRITE", "DESCRIBE"], "story.events" = ["READ", "DESCRIBE"], "media.events" = ["READ", "DESCRIBE"], "relationship.events" = ["READ", "DESCRIBE"], "follow.events" = ["READ", "DESCRIBE"], "moderation.events" = ["READ", "DESCRIBE"]
         }, group_permissions = {
         }, cluster_permissions = []
       }

@@ -111,7 +111,7 @@ unset CH_ADMIN_PASS
 #    SCRAM credential for external tooling (Kafka UI, Redpanda Console, kcat).
 #    It still needs a secret here because redpanda.hcl fetches a password for
 #    EVERY key in service_users, and that map includes it.
-SERVICES="api-gateway auth-service user-service search-service feed-service notification-service analytics-service comment-service engagement-service media-service video-processing-service recommendation-service gift-service wallet-service moderation-service report-service audit-service story-service pk-service monitoring-readonly"
+SERVICES="api-gateway auth-service user-service search-service feed-service notification-service analytics-service comment-service engagement-service media-service video-processing-service recommendation-service gift-service wallet-service moderation-service report-service audit-service story-service pk-service chat-service monitoring-readonly"
 
 for svc in $SERVICES; do
   PASS=$(random_password)
