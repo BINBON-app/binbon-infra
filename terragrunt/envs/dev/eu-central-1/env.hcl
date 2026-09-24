@@ -36,7 +36,7 @@ locals {
       }, secret_arns = {
       }, redpanda_user = "audit-service", task_policy_json = null
     }
-    auth-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:auth-service-replace", container_port = 8081, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+    auth-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:auth-service-replace", container_port = 8081, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev", OTP_FIXED_CODE = "151507"
       }, secret_arns = {
       }, redpanda_user = "auth-service", task_policy_json = null
     }
