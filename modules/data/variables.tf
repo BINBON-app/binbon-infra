@@ -42,6 +42,12 @@ variable "keyspaces_tables" {
     clustering_key = optional(list(object({
       name = string, order = optional(string, "ASC")
     })), [])
+    static_columns = optional(list(string), [])
+    # Keyspaces options. A table missing one still PREPAREs, then fails the
+    # service's capability probe and keeps that feature at 503.
+    default_time_to_live   = optional(number)
+    ttl_enabled            = optional(bool, false)
+    client_side_timestamps = optional(bool, false)
   }))
   default = {}
 }

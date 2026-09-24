@@ -118,6 +118,27 @@ resource "aws_keyspaces_table" "this" {
     throughput_mode = "PAY_PER_REQUEST"
   }
 
+  default_time_to_live = each.value.default_time_to_live
+
+  # Required for any USING TTL write or default_time_to_live. Keyspaces cannot
+  # turn it off again once enabled.
+  dynamic "ttl" {
+    for_each = each.value.ttl_enabled ? [1] : []
+
+    content {
+      status = "ENABLED"
+    }
+  }
+
+  # Required for USING TIMESTAMP writes. Also one-way once enabled.
+  dynamic "client_side_timestamps" {
+    for_each = each.value.client_side_timestamps ? [1] : []
+
+    content {
+      status = "ENABLED"
+    }
+  }
+
   schema_definition {
     dynamic "column" {
       for_each = each.value.columns
@@ -142,6 +163,14 @@ resource "aws_keyspaces_table" "this" {
       content {
         name     = clustering_key.value.name
         order_by = clustering_key.value.order
+      }
+    }
+
+    dynamic "static_column" {
+      for_each = each.value.static_columns
+
+      content {
+        name = static_column.value
       }
     }
   }

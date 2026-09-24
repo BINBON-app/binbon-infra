@@ -41,5 +41,5 @@ config_path="../alb"
  mock_outputs_allowed_terraform_commands=["init","validate","plan","destroy"] 
 }
 inputs={
-name="binbon-${local.env.locals.environment}",vpc_id=dependency.network.outputs.vpc_id,data_subnet_ids=dependency.network.outputs.data_subnet_ids,app_security_group_id=dependency.alb.outputs.task_security_group_id,kms_key_arn=dependency.foundation.outputs.kms_key_arn,aurora_max_acu=local.env.locals.environment == "prod" ? 32 : 4,enable_deletion_protection=local.env.locals.environment == "prod",keyspaces_tables=local.env.locals.keyspaces_tables,tags=local.tags 
+name="binbon-${local.env.locals.environment}",vpc_id=dependency.network.outputs.vpc_id,data_subnet_ids=dependency.network.outputs.data_subnet_ids,app_security_group_id=dependency.alb.outputs.task_security_group_id,kms_key_arn=dependency.foundation.outputs.kms_key_arn,aurora_max_acu=local.env.locals.environment == "prod" ? 32 : 4,enable_deletion_protection=local.env.locals.environment == "prod",keyspaces_tables=jsondecode(file(find_in_parent_folders("keyspaces/tables.json"))).tables,tags=local.tags 
 }

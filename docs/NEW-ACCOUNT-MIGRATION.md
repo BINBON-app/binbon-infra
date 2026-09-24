@@ -331,6 +331,20 @@ roll back, rather than as a green fleet that silently can't publish.
 > `HEALTHY` says nothing about the broker. Consumer-group lag is no help either:
 > rskafka reads partitions directly rather than joining a Kafka consumer group.
 
+> [!WARNING]
+> `HEALTHY` doesn't prove the **Keyspaces tables** exist either. A feature whose
+> table is missing keeps its gate closed and answers 503, and on purpose that is
+> not a startup failure. chat-service deployed healthy while every message send
+> was a 503. Search the logs for closed gates directly:
+>
+> ```bash
+> aws logs filter-log-events --log-group-name /ecs/binbon-dev/chat-service \
+>   --filter-pattern '"feature unavailable"' --start-time $(( ($(date +%s) - 900) * 1000 ))
+> ```
+>
+> Each line names the feature and the missing table or option. Step 18 covers
+> the fix and the pre-merge check.
+
 ---
 
 ## 13. Check the VPN actually serves
@@ -659,6 +673,75 @@ dropping one. Don't loosen those settings while the gate is on.
 
 To disable the gate for one service, remove it from `kafka_health_services` and
 apply `services`. It takes effect on that service's next deploy.
+
+## 18. Keyspaces table consistency
+
+On Amazon Keyspaces the services can't create their own tables
+(`MIGRATE_ON_START=false`), so every `CREATE TABLE` in the backend has to be
+provisioned here. The tables are listed in
+**`terragrunt/keyspaces/tables.json`**, which `components/data.hcl` reads for
+every environment. It's generated from the backend code, so don't edit it by
+hand.
+
+The table options matter as much as the columns. A table created without
+`ttl`, without its `default_time_to_live`, or without `client_side_timestamps`
+still PREPAREs. It then fails the service's capability probe, and that feature
+stays at 503 for good.
+
+This used to live inline in dev's `env.hcl`, as a hand copy of only each
+service's *legacy* tables. 61 feature tables were never created (33 for chat,
+24 for story and the 4 `event_outbox*` tables), and 5 existing tables lacked
+the TTL their DDL declares. Staging and prod had no table list at all.
+
+**To change the tables** (a backend PR adds a table, column or option):
+
+```bash
+# in the backend repo
+python3 scripts/check-keyspaces-infra.py --emit > ../binbon-aws-terraform-complete/terragrunt/keyspaces/tables.json
+# in this repo: review the diff, merge to main, then
+cd terragrunt/envs/dev/eu-central-1/data && terragrunt plan   # expect adds / in-place only
+```
+
+The plan must show only **adds and in-place updates**. Adding columns,
+TTL, a default TTL or client-side timestamps are all in-place. A **replace**
+means a key changed, and a replace **drops the table and its data**; stop and
+migrate by hand instead. Services pick new tables up without a redeploy: a
+closed gate retries every 60 seconds.
+
+> [!WARNING]
+> `ttl` and `client_side_timestamps` are **one-way** on Keyspaces. Once
+> enabled, they can't be turned off, so a mistaken enable can't be undone by
+> reverting the JSON.
+
+### The check
+
+`keyspaces-infra-check.yml` in the **backend** repo runs
+`scripts/check-keyspaces-infra.py` against this repo's `main`, with the same
+triggers and the same `INFRA_REPO_TOKEN` as the Kafka check (step 17a). For
+every table in a crate that depends on `scylla`, it fails if the table is
+missing or differs in any of these:
+
+- partition key;
+- clustering key, including ASC/DESC;
+- a column or its type;
+- static columns;
+- `default_time_to_live`;
+- a needed `ttl`, when the table has a default TTL, is written `USING TTL`, or
+  has a TTL probe;
+- a needed `client_side_timestamps`, when the table is written `USING TIMESTAMP`.
+
+It also fails if `data.hcl` stops reading the file. As with Kafka, **the order
+is infra first**: regenerate, merge and apply here, then the backend PR passes.
+
+```bash
+python3 scripts/check-keyspaces-infra.py --infra ../binbon-aws-terraform-complete
+```
+
+> [!NOTE]
+> Tables that are only *described* in docs and never created in code aren't
+> required. `story_moderation` is one: the story docs say the platform spec
+> owns its shape, and no statement uses it yet. Provision it when that code
+> lands, and the check will require it from then on.
 
 ---
 

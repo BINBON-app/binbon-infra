@@ -1,0 +1,3332 @@
+{
+  "_generated_by": "official-backend-rust scripts/check-keyspaces-infra.py --emit; do not edit by hand",
+  "tables": {
+    "chat_client_msg_ids": {
+      "columns": [
+        {
+          "name": "sender_id",
+          "type": "uuid"
+        },
+        {
+          "name": "client_msg_id",
+          "type": "uuid"
+        },
+        {
+          "name": "message_id",
+          "type": "uuid"
+        },
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "bucket",
+          "type": "int"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "sender_id",
+        "client_msg_id"
+      ],
+      "clustering_key": [],
+      "default_time_to_live": 604800,
+      "ttl_enabled": true
+    },
+    "chat_conv_buckets": {
+      "columns": [
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "bucket",
+          "type": "int"
+        }
+      ],
+      "partition_key": [
+        "conversation_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "bucket",
+          "order": "DESC"
+        }
+      ]
+    },
+    "chat_conversation_media": {
+      "columns": [
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "category",
+          "type": "text"
+        },
+        {
+          "name": "message_id",
+          "type": "uuid"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "sender_id",
+          "type": "uuid"
+        },
+        {
+          "name": "bucket",
+          "type": "int"
+        }
+      ],
+      "partition_key": [
+        "conversation_id",
+        "category"
+      ],
+      "clustering_key": [
+        {
+          "name": "message_id",
+          "order": "DESC"
+        }
+      ]
+    },
+    "chat_conversations": {
+      "columns": [
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "kind",
+          "type": "text"
+        },
+        {
+          "name": "member_a",
+          "type": "uuid"
+        },
+        {
+          "name": "member_b",
+          "type": "uuid"
+        },
+        {
+          "name": "title",
+          "type": "text"
+        },
+        {
+          "name": "description",
+          "type": "text"
+        },
+        {
+          "name": "avatar_media_id",
+          "type": "uuid"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "updated_by",
+          "type": "uuid"
+        },
+        {
+          "name": "send_permission",
+          "type": "text"
+        },
+        {
+          "name": "edit_info_permission",
+          "type": "text"
+        },
+        {
+          "name": "add_members_permission",
+          "type": "text"
+        },
+        {
+          "name": "approval_required",
+          "type": "boolean"
+        },
+        {
+          "name": "disappearing_secs",
+          "type": "int"
+        },
+        {
+          "name": "member_count",
+          "type": "int"
+        },
+        {
+          "name": "suspended",
+          "type": "boolean"
+        },
+        {
+          "name": "suspended_reason",
+          "type": "text"
+        },
+        {
+          "name": "version",
+          "type": "bigint"
+        },
+        {
+          "name": "invited_count",
+          "type": "int"
+        }
+      ],
+      "partition_key": [
+        "conversation_id"
+      ],
+      "clustering_key": []
+    },
+    "chat_event_rsvps": {
+      "columns": [
+        {
+          "name": "message_id",
+          "type": "uuid"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "response",
+          "type": "text"
+        },
+        {
+          "name": "responded_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        }
+      ],
+      "partition_key": [
+        "message_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "user_id",
+          "order": "ASC"
+        }
+      ]
+    },
+    "chat_expiry_queue": {
+      "columns": [
+        {
+          "name": "shard",
+          "type": "int"
+        },
+        {
+          "name": "minute",
+          "type": "bigint"
+        },
+        {
+          "name": "expires_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "message_id",
+          "type": "uuid"
+        },
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "bucket",
+          "type": "int"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "reason",
+          "type": "text"
+        }
+      ],
+      "partition_key": [
+        "shard",
+        "minute"
+      ],
+      "clustering_key": [
+        {
+          "name": "expires_at",
+          "order": "ASC"
+        },
+        {
+          "name": "message_id",
+          "order": "ASC"
+        }
+      ],
+      "default_time_to_live": 8294400,
+      "ttl_enabled": true
+    },
+    "chat_hidden_messages": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "message_id",
+          "type": "uuid"
+        },
+        {
+          "name": "hidden_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "user_id",
+        "conversation_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "message_id",
+          "order": "DESC"
+        }
+      ]
+    },
+    "chat_inbox_backfill": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "started_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "done_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "cursor",
+          "type": "uuid"
+        }
+      ],
+      "partition_key": [
+        "user_id"
+      ],
+      "clustering_key": []
+    },
+    "chat_inbox_days": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "day",
+          "type": "int"
+        },
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        }
+      ],
+      "partition_key": [
+        "user_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "day",
+          "order": "DESC"
+        },
+        {
+          "name": "conversation_id",
+          "order": "ASC"
+        }
+      ],
+      "default_time_to_live": 34560000,
+      "ttl_enabled": true
+    },
+    "chat_inbox_pinned": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "pinned_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "user_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "conversation_id",
+          "order": "ASC"
+        }
+      ]
+    },
+    "chat_inbox_state": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "conversation_kind",
+          "type": "text"
+        },
+        {
+          "name": "other_user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "last_message_id",
+          "type": "uuid"
+        },
+        {
+          "name": "last_message_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "last_sender_id",
+          "type": "uuid"
+        },
+        {
+          "name": "last_kind",
+          "type": "text"
+        },
+        {
+          "name": "last_preview",
+          "type": "text"
+        },
+        {
+          "name": "last_mentioned",
+          "type": "boolean"
+        },
+        {
+          "name": "folder",
+          "type": "text"
+        },
+        {
+          "name": "accepted",
+          "type": "boolean"
+        },
+        {
+          "name": "archived",
+          "type": "boolean"
+        },
+        {
+          "name": "muted_until",
+          "type": "timestamp"
+        },
+        {
+          "name": "marked_unread",
+          "type": "boolean"
+        },
+        {
+          "name": "cleared_before",
+          "type": "timestamp"
+        },
+        {
+          "name": "joined_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "left_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "user_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "conversation_id",
+          "order": "ASC"
+        }
+      ],
+      "client_side_timestamps": true
+    },
+    "chat_invite_by_conversation": {
+      "columns": [
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "code",
+          "type": "text"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "conversation_id"
+      ],
+      "clustering_key": []
+    },
+    "chat_invite_codes": {
+      "columns": [
+        {
+          "name": "code",
+          "type": "text"
+        },
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "revoked",
+          "type": "boolean"
+        }
+      ],
+      "partition_key": [
+        "code"
+      ],
+      "clustering_key": []
+    },
+    "chat_job_checkpoints": {
+      "columns": [
+        {
+          "name": "job",
+          "type": "text"
+        },
+        {
+          "name": "shard",
+          "type": "int"
+        },
+        {
+          "name": "minute",
+          "type": "bigint"
+        }
+      ],
+      "partition_key": [
+        "job"
+      ],
+      "clustering_key": [
+        {
+          "name": "shard",
+          "order": "ASC"
+        }
+      ]
+    },
+    "chat_job_leases": {
+      "columns": [
+        {
+          "name": "job",
+          "type": "text"
+        },
+        {
+          "name": "shard",
+          "type": "int"
+        },
+        {
+          "name": "owner",
+          "type": "text"
+        }
+      ],
+      "partition_key": [
+        "job",
+        "shard"
+      ],
+      "clustering_key": [],
+      "default_time_to_live": 30,
+      "ttl_enabled": true
+    },
+    "chat_join_requests": {
+      "columns": [
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "requested_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "conversation_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "user_id",
+          "order": "ASC"
+        }
+      ],
+      "default_time_to_live": 2592000,
+      "ttl_enabled": true
+    },
+    "chat_live_locations": {
+      "columns": [
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "message_id",
+          "type": "uuid"
+        },
+        {
+          "name": "sender_id",
+          "type": "uuid"
+        },
+        {
+          "name": "lat",
+          "type": "double"
+        },
+        {
+          "name": "lng",
+          "type": "double"
+        },
+        {
+          "name": "accuracy_m",
+          "type": "float"
+        },
+        {
+          "name": "heading",
+          "type": "float"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "expires_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "ended",
+          "type": "boolean"
+        }
+      ],
+      "partition_key": [
+        "conversation_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "message_id",
+          "order": "DESC"
+        }
+      ],
+      "ttl_enabled": true
+    },
+    "chat_media_messages": {
+      "columns": [
+        {
+          "name": "media_id",
+          "type": "uuid"
+        },
+        {
+          "name": "message_id",
+          "type": "uuid"
+        },
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "bucket",
+          "type": "int"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "sender_id",
+          "type": "uuid"
+        }
+      ],
+      "partition_key": [
+        "media_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "message_id",
+          "order": "ASC"
+        }
+      ]
+    },
+    "chat_members": {
+      "columns": [
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "role",
+          "type": "text"
+        },
+        {
+          "name": "state",
+          "type": "text"
+        },
+        {
+          "name": "joined_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "added_by",
+          "type": "uuid"
+        },
+        {
+          "name": "left_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "history_from",
+          "type": "timestamp"
+        },
+        {
+          "name": "muted_until",
+          "type": "timestamp"
+        },
+        {
+          "name": "invited_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "conversation_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "user_id",
+          "order": "ASC"
+        }
+      ]
+    },
+    "chat_message_ext": {
+      "columns": [
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "bucket",
+          "type": "int"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "message_id",
+          "type": "uuid"
+        },
+        {
+          "name": "schema_v",
+          "type": "int"
+        },
+        {
+          "name": "conversation_kind",
+          "type": "text"
+        },
+        {
+          "name": "sender_id",
+          "type": "uuid"
+        },
+        {
+          "name": "client_msg_id",
+          "type": "uuid"
+        },
+        {
+          "name": "reply_to_message_id",
+          "type": "uuid"
+        },
+        {
+          "name": "reply_to_conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "forwarded_from_message_id",
+          "type": "uuid"
+        },
+        {
+          "name": "forward_count",
+          "type": "int"
+        },
+        {
+          "name": "edited_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "edit_count",
+          "type": "int"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "deleted_by",
+          "type": "uuid"
+        },
+        {
+          "name": "delete_reason",
+          "type": "text"
+        },
+        {
+          "name": "expires_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "view_once",
+          "type": "boolean"
+        },
+        {
+          "name": "media_group_id",
+          "type": "uuid"
+        },
+        {
+          "name": "quality",
+          "type": "text"
+        },
+        {
+          "name": "mentions_all",
+          "type": "boolean"
+        },
+        {
+          "name": "mentioned_user_ids",
+          "type": "set<uuid>"
+        },
+        {
+          "name": "entities",
+          "type": "text"
+        },
+        {
+          "name": "content_ref",
+          "type": "text"
+        },
+        {
+          "name": "media",
+          "type": "text"
+        },
+        {
+          "name": "payload",
+          "type": "text"
+        },
+        {
+          "name": "reaction_summary",
+          "type": "text"
+        },
+        {
+          "name": "poll_summary",
+          "type": "text"
+        },
+        {
+          "name": "rsvp_summary",
+          "type": "text"
+        }
+      ],
+      "partition_key": [
+        "conversation_id",
+        "bucket"
+      ],
+      "clustering_key": [
+        {
+          "name": "created_at",
+          "order": "DESC"
+        },
+        {
+          "name": "message_id",
+          "order": "DESC"
+        }
+      ]
+    },
+    "chat_message_index": {
+      "columns": [
+        {
+          "name": "message_id",
+          "type": "uuid"
+        },
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "bucket",
+          "type": "int"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "sender_id",
+          "type": "uuid"
+        },
+        {
+          "name": "kind",
+          "type": "text"
+        },
+        {
+          "name": "conversation_kind",
+          "type": "text"
+        }
+      ],
+      "partition_key": [
+        "message_id"
+      ],
+      "clustering_key": []
+    },
+    "chat_moderation": {
+      "columns": [
+        {
+          "name": "target_id",
+          "type": "uuid"
+        },
+        {
+          "name": "target_type",
+          "type": "text"
+        },
+        {
+          "name": "action",
+          "type": "text"
+        },
+        {
+          "name": "action_id",
+          "type": "uuid"
+        },
+        {
+          "name": "reason",
+          "type": "text"
+        },
+        {
+          "name": "moderator_id",
+          "type": "uuid"
+        },
+        {
+          "name": "applied_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "target_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "target_type",
+          "order": "ASC"
+        }
+      ]
+    },
+    "chat_pins": {
+      "columns": [
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "message_id",
+          "type": "uuid"
+        },
+        {
+          "name": "pinned_by",
+          "type": "uuid"
+        },
+        {
+          "name": "pinned_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "expires_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "conversation_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "message_id",
+          "order": "DESC"
+        }
+      ],
+      "ttl_enabled": true
+    },
+    "chat_poll_votes": {
+      "columns": [
+        {
+          "name": "message_id",
+          "type": "uuid"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "option_ids",
+          "type": "set<int>"
+        },
+        {
+          "name": "voted_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        }
+      ],
+      "partition_key": [
+        "message_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "user_id",
+          "order": "ASC"
+        }
+      ]
+    },
+    "chat_reactions": {
+      "columns": [
+        {
+          "name": "message_id",
+          "type": "uuid"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "reaction",
+          "type": "text"
+        },
+        {
+          "name": "reacted_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        }
+      ],
+      "partition_key": [
+        "message_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "user_id",
+          "order": "ASC"
+        }
+      ]
+    },
+    "chat_receipt_log": {
+      "columns": [
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "at",
+          "type": "timestamp"
+        },
+        {
+          "name": "status",
+          "type": "text"
+        },
+        {
+          "name": "up_to_message_id",
+          "type": "uuid"
+        }
+      ],
+      "partition_key": [
+        "conversation_id",
+        "user_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "at",
+          "order": "DESC"
+        },
+        {
+          "name": "status",
+          "order": "ASC"
+        }
+      ],
+      "default_time_to_live": 7776000,
+      "ttl_enabled": true
+    },
+    "chat_receipts": {
+      "columns": [
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "delivered_up_to",
+          "type": "uuid"
+        },
+        {
+          "name": "delivered_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "read_up_to",
+          "type": "uuid"
+        },
+        {
+          "name": "read_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "conversation_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "user_id",
+          "order": "ASC"
+        }
+      ],
+      "client_side_timestamps": true
+    },
+    "chat_search_docs": {
+      "columns": [
+        {
+          "name": "message_id",
+          "type": "uuid"
+        },
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "bucket",
+          "type": "int"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "terms",
+          "type": "set<text>"
+        },
+        {
+          "name": "text_sha256",
+          "type": "text"
+        },
+        {
+          "name": "indexed_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "message_id"
+      ],
+      "clustering_key": []
+    },
+    "chat_search_terms": {
+      "columns": [
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "bucket",
+          "type": "int"
+        },
+        {
+          "name": "prefix",
+          "type": "text"
+        },
+        {
+          "name": "term",
+          "type": "text"
+        },
+        {
+          "name": "message_id",
+          "type": "uuid"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "sender_id",
+          "type": "uuid"
+        },
+        {
+          "name": "kind",
+          "type": "text"
+        }
+      ],
+      "partition_key": [
+        "conversation_id",
+        "bucket",
+        "prefix"
+      ],
+      "clustering_key": [
+        {
+          "name": "term",
+          "order": "ASC"
+        },
+        {
+          "name": "message_id",
+          "order": "DESC"
+        }
+      ]
+    },
+    "chat_stars_by_conversation": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "message_id",
+          "type": "uuid"
+        },
+        {
+          "name": "starred_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "user_id",
+        "conversation_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "message_id",
+          "order": "DESC"
+        }
+      ]
+    },
+    "chat_stars_by_user": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "message_id",
+          "type": "uuid"
+        },
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "starred_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "user_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "message_id",
+          "order": "DESC"
+        }
+      ]
+    },
+    "chat_view_once_opens": {
+      "columns": [
+        {
+          "name": "message_id",
+          "type": "uuid"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "opened_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        }
+      ],
+      "partition_key": [
+        "message_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "user_id",
+          "order": "ASC"
+        }
+      ],
+      "default_time_to_live": 2592000,
+      "ttl_enabled": true
+    },
+    "chat_voice_plays": {
+      "columns": [
+        {
+          "name": "message_id",
+          "type": "uuid"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "played_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        }
+      ],
+      "partition_key": [
+        "message_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "user_id",
+          "order": "ASC"
+        }
+      ]
+    },
+    "comment_counters": {
+      "columns": [
+        {
+          "name": "video_id",
+          "type": "uuid"
+        },
+        {
+          "name": "comments_count",
+          "type": "counter"
+        }
+      ],
+      "partition_key": [
+        "video_id"
+      ],
+      "clustering_key": []
+    },
+    "comment_like_counters": {
+      "columns": [
+        {
+          "name": "comment_id",
+          "type": "uuid"
+        },
+        {
+          "name": "likes_count",
+          "type": "counter"
+        }
+      ],
+      "partition_key": [
+        "comment_id"
+      ],
+      "clustering_key": []
+    },
+    "comment_likes_by_comment": {
+      "columns": [
+        {
+          "name": "comment_id",
+          "type": "uuid"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "liked_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "comment_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "user_id",
+          "order": "ASC"
+        }
+      ]
+    },
+    "comment_meta": {
+      "columns": [
+        {
+          "name": "comment_id",
+          "type": "uuid"
+        },
+        {
+          "name": "video_id",
+          "type": "uuid"
+        },
+        {
+          "name": "author_id",
+          "type": "uuid"
+        }
+      ],
+      "partition_key": [
+        "comment_id"
+      ],
+      "clustering_key": []
+    },
+    "comments_by_video": {
+      "columns": [
+        {
+          "name": "video_id",
+          "type": "uuid"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "comment_id",
+          "type": "uuid"
+        },
+        {
+          "name": "author_id",
+          "type": "uuid"
+        },
+        {
+          "name": "body",
+          "type": "text"
+        },
+        {
+          "name": "sticker_id",
+          "type": "uuid"
+        },
+        {
+          "name": "likes_count",
+          "type": "int"
+        }
+      ],
+      "partition_key": [
+        "video_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "created_at",
+          "order": "DESC"
+        },
+        {
+          "name": "comment_id",
+          "order": "DESC"
+        }
+      ]
+    },
+    "consumer_offsets": {
+      "columns": [
+        {
+          "name": "consumer",
+          "type": "text"
+        },
+        {
+          "name": "topic",
+          "type": "text"
+        },
+        {
+          "name": "partition",
+          "type": "int"
+        },
+        {
+          "name": "next_offset",
+          "type": "bigint"
+        }
+      ],
+      "partition_key": [
+        "consumer",
+        "topic"
+      ],
+      "clustering_key": [
+        {
+          "name": "partition",
+          "order": "ASC"
+        }
+      ]
+    },
+    "conv_received": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "n",
+          "type": "counter"
+        }
+      ],
+      "partition_key": [
+        "user_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "conversation_id",
+          "order": "ASC"
+        }
+      ]
+    },
+    "conversations_by_user": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "other_user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "last_body",
+          "type": "text"
+        },
+        {
+          "name": "last_kind",
+          "type": "text"
+        },
+        {
+          "name": "last_message_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "user_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "conversation_id",
+          "order": "ASC"
+        }
+      ]
+    },
+    "event_outbox": {
+      "columns": [
+        {
+          "name": "producer",
+          "type": "text"
+        },
+        {
+          "name": "shard",
+          "type": "int"
+        },
+        {
+          "name": "bucket",
+          "type": "bigint"
+        },
+        {
+          "name": "event_id",
+          "type": "uuid"
+        },
+        {
+          "name": "topic",
+          "type": "text"
+        },
+        {
+          "name": "msg_key",
+          "type": "text"
+        },
+        {
+          "name": "payload",
+          "type": "blob"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "attempts",
+          "type": "int"
+        }
+      ],
+      "partition_key": [
+        "producer",
+        "shard",
+        "bucket"
+      ],
+      "clustering_key": [
+        {
+          "name": "event_id",
+          "order": "ASC"
+        }
+      ],
+      "default_time_to_live": 604800,
+      "ttl_enabled": true
+    },
+    "event_outbox_checkpoints": {
+      "columns": [
+        {
+          "name": "producer",
+          "type": "text"
+        },
+        {
+          "name": "shard",
+          "type": "int"
+        },
+        {
+          "name": "bucket",
+          "type": "bigint"
+        }
+      ],
+      "partition_key": [
+        "producer"
+      ],
+      "clustering_key": [
+        {
+          "name": "shard",
+          "order": "ASC"
+        }
+      ]
+    },
+    "event_outbox_dead": {
+      "columns": [
+        {
+          "name": "producer",
+          "type": "text"
+        },
+        {
+          "name": "day",
+          "type": "int"
+        },
+        {
+          "name": "event_id",
+          "type": "uuid"
+        },
+        {
+          "name": "shard",
+          "type": "int"
+        },
+        {
+          "name": "bucket",
+          "type": "bigint"
+        },
+        {
+          "name": "topic",
+          "type": "text"
+        },
+        {
+          "name": "msg_key",
+          "type": "text"
+        },
+        {
+          "name": "payload",
+          "type": "blob"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "dead_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "attempts",
+          "type": "int"
+        },
+        {
+          "name": "dead_reason",
+          "type": "text"
+        },
+        {
+          "name": "last_error",
+          "type": "text"
+        }
+      ],
+      "partition_key": [
+        "producer",
+        "day"
+      ],
+      "clustering_key": [
+        {
+          "name": "event_id",
+          "order": "ASC"
+        }
+      ]
+    },
+    "event_outbox_leases": {
+      "columns": [
+        {
+          "name": "producer",
+          "type": "text"
+        },
+        {
+          "name": "shard",
+          "type": "int"
+        },
+        {
+          "name": "owner",
+          "type": "text"
+        }
+      ],
+      "partition_key": [
+        "producer",
+        "shard"
+      ],
+      "clustering_key": [],
+      "default_time_to_live": 30,
+      "ttl_enabled": true
+    },
+    "feed_by_user": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "bucket",
+          "type": "int"
+        },
+        {
+          "name": "inserted_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "video_id",
+          "type": "uuid"
+        },
+        {
+          "name": "owner_id",
+          "type": "uuid"
+        },
+        {
+          "name": "score",
+          "type": "double"
+        }
+      ],
+      "partition_key": [
+        "user_id",
+        "bucket"
+      ],
+      "clustering_key": [
+        {
+          "name": "inserted_at",
+          "order": "DESC"
+        },
+        {
+          "name": "video_id",
+          "order": "DESC"
+        }
+      ]
+    },
+    "followers_by_user": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "follower_id",
+          "type": "uuid"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "user_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "follower_id",
+          "order": "ASC"
+        }
+      ]
+    },
+    "following_by_user": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "followee_id",
+          "type": "uuid"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "user_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "followee_id",
+          "order": "ASC"
+        }
+      ]
+    },
+    "likes_by_user": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "liked_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "video_id",
+          "type": "uuid"
+        }
+      ],
+      "partition_key": [
+        "user_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "liked_at",
+          "order": "DESC"
+        },
+        {
+          "name": "video_id",
+          "order": "DESC"
+        }
+      ]
+    },
+    "likes_by_video": {
+      "columns": [
+        {
+          "name": "video_id",
+          "type": "uuid"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "liked_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "video_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "user_id",
+          "order": "ASC"
+        }
+      ]
+    },
+    "messages_by_conversation": {
+      "columns": [
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "bucket",
+          "type": "int"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "message_id",
+          "type": "uuid"
+        },
+        {
+          "name": "sender_id",
+          "type": "uuid"
+        },
+        {
+          "name": "kind",
+          "type": "text"
+        },
+        {
+          "name": "body",
+          "type": "text"
+        },
+        {
+          "name": "media_id",
+          "type": "uuid"
+        },
+        {
+          "name": "duration_ms",
+          "type": "int"
+        }
+      ],
+      "partition_key": [
+        "conversation_id",
+        "bucket"
+      ],
+      "clustering_key": [
+        {
+          "name": "created_at",
+          "order": "DESC"
+        },
+        {
+          "name": "message_id",
+          "order": "DESC"
+        }
+      ]
+    },
+    "read_marks": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "conversation_id",
+          "type": "uuid"
+        },
+        {
+          "name": "read_count",
+          "type": "bigint"
+        },
+        {
+          "name": "last_read_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "user_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "conversation_id",
+          "order": "ASC"
+        }
+      ]
+    },
+    "replies_by_comment": {
+      "columns": [
+        {
+          "name": "comment_id",
+          "type": "uuid"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "reply_id",
+          "type": "uuid"
+        },
+        {
+          "name": "author_id",
+          "type": "uuid"
+        },
+        {
+          "name": "body",
+          "type": "text"
+        },
+        {
+          "name": "sticker_id",
+          "type": "uuid"
+        }
+      ],
+      "partition_key": [
+        "comment_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "created_at",
+          "order": "ASC"
+        },
+        {
+          "name": "reply_id",
+          "order": "ASC"
+        }
+      ]
+    },
+    "saves_by_user": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "saved_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "video_id",
+          "type": "uuid"
+        }
+      ],
+      "partition_key": [
+        "user_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "saved_at",
+          "order": "DESC"
+        },
+        {
+          "name": "video_id",
+          "order": "DESC"
+        }
+      ]
+    },
+    "saves_by_video": {
+      "columns": [
+        {
+          "name": "video_id",
+          "type": "uuid"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "saved_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "video_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "user_id",
+          "order": "ASC"
+        }
+      ]
+    },
+    "shares_by_video": {
+      "columns": [
+        {
+          "name": "video_id",
+          "type": "uuid"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "shared_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "video_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "user_id",
+          "order": "ASC"
+        }
+      ]
+    },
+    "stories_by_id": {
+      "columns": [
+        {
+          "name": "story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "owner_id",
+          "type": "uuid"
+        },
+        {
+          "name": "media_id",
+          "type": "uuid"
+        },
+        {
+          "name": "kind",
+          "type": "text"
+        },
+        {
+          "name": "visibility",
+          "type": "text"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "story_id"
+      ],
+      "clustering_key": [],
+      "default_time_to_live": 86400,
+      "ttl_enabled": true
+    },
+    "stories_by_user": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "media_id",
+          "type": "uuid"
+        },
+        {
+          "name": "kind",
+          "type": "text"
+        },
+        {
+          "name": "visibility",
+          "type": "text"
+        }
+      ],
+      "partition_key": [
+        "user_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "created_at",
+          "order": "DESC"
+        },
+        {
+          "name": "story_id",
+          "order": "DESC"
+        }
+      ],
+      "default_time_to_live": 86400,
+      "ttl_enabled": true
+    },
+    "story_add_yours_chains": {
+      "columns": [
+        {
+          "name": "chain_id",
+          "type": "uuid"
+        },
+        {
+          "name": "root_story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "root_owner_id",
+          "type": "uuid"
+        },
+        {
+          "name": "prompt",
+          "type": "text"
+        },
+        {
+          "name": "status",
+          "type": "text"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "chain_id"
+      ],
+      "clustering_key": []
+    },
+    "story_add_yours_entries": {
+      "columns": [
+        {
+          "name": "chain_id",
+          "type": "uuid"
+        },
+        {
+          "name": "bucket",
+          "type": "int"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "owner_id",
+          "type": "uuid"
+        }
+      ],
+      "partition_key": [
+        "chain_id",
+        "bucket"
+      ],
+      "clustering_key": [
+        {
+          "name": "created_at",
+          "order": "DESC"
+        },
+        {
+          "name": "story_id",
+          "order": "DESC"
+        }
+      ],
+      "default_time_to_live": 86400,
+      "ttl_enabled": true
+    },
+    "story_archive_by_owner": {
+      "columns": [
+        {
+          "name": "owner_id",
+          "type": "uuid"
+        },
+        {
+          "name": "bucket",
+          "type": "int"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "media_id",
+          "type": "uuid"
+        },
+        {
+          "name": "kind",
+          "type": "text"
+        },
+        {
+          "name": "visibility",
+          "type": "text"
+        },
+        {
+          "name": "status",
+          "type": "text"
+        },
+        {
+          "name": "expires_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "retention",
+          "type": "text"
+        }
+      ],
+      "partition_key": [
+        "owner_id",
+        "bucket"
+      ],
+      "clustering_key": [
+        {
+          "name": "created_at",
+          "order": "DESC"
+        },
+        {
+          "name": "story_id",
+          "order": "DESC"
+        }
+      ],
+      "ttl_enabled": true
+    },
+    "story_archive_months": {
+      "columns": [
+        {
+          "name": "owner_id",
+          "type": "uuid"
+        },
+        {
+          "name": "bucket",
+          "type": "int"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "owner_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "bucket",
+          "order": "DESC"
+        }
+      ]
+    },
+    "story_by_media": {
+      "columns": [
+        {
+          "name": "media_id",
+          "type": "uuid"
+        },
+        {
+          "name": "story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "owner_id",
+          "type": "uuid"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "media_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "story_id",
+          "order": "ASC"
+        }
+      ],
+      "default_time_to_live": 604800,
+      "ttl_enabled": true
+    },
+    "story_countdown_due": {
+      "columns": [
+        {
+          "name": "due_bucket",
+          "type": "bigint"
+        },
+        {
+          "name": "element_id",
+          "type": "uuid"
+        },
+        {
+          "name": "story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "owner_id",
+          "type": "uuid"
+        },
+        {
+          "name": "ends_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "due_bucket"
+      ],
+      "clustering_key": [
+        {
+          "name": "element_id",
+          "order": "ASC"
+        }
+      ],
+      "default_time_to_live": 34214400,
+      "ttl_enabled": true
+    },
+    "story_countdown_subscribers": {
+      "columns": [
+        {
+          "name": "element_id",
+          "type": "uuid"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "subscribed_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "element_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "user_id",
+          "order": "ASC"
+        }
+      ],
+      "ttl_enabled": true
+    },
+    "story_counters": {
+      "columns": [
+        {
+          "name": "story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "impressions",
+          "type": "counter"
+        },
+        {
+          "name": "likes",
+          "type": "counter"
+        },
+        {
+          "name": "reactions",
+          "type": "counter"
+        }
+      ],
+      "partition_key": [
+        "story_id"
+      ],
+      "clustering_key": []
+    },
+    "story_element_responses": {
+      "columns": [
+        {
+          "name": "story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "element_id",
+          "type": "uuid"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "element_type",
+          "type": "text"
+        },
+        {
+          "name": "option_index",
+          "type": "int"
+        },
+        {
+          "name": "slider_value",
+          "type": "int"
+        },
+        {
+          "name": "responded_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "story_id",
+        "element_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "user_id",
+          "order": "ASC"
+        }
+      ],
+      "ttl_enabled": true
+    },
+    "story_element_tallies": {
+      "columns": [
+        {
+          "name": "story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "element_id",
+          "type": "uuid"
+        },
+        {
+          "name": "option_index",
+          "type": "int"
+        },
+        {
+          "name": "responses",
+          "type": "counter"
+        },
+        {
+          "name": "value_sum",
+          "type": "counter"
+        }
+      ],
+      "partition_key": [
+        "story_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "element_id",
+          "order": "ASC"
+        },
+        {
+          "name": "option_index",
+          "order": "ASC"
+        }
+      ]
+    },
+    "story_expiry_due": {
+      "columns": [
+        {
+          "name": "due_bucket",
+          "type": "bigint"
+        },
+        {
+          "name": "story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "action",
+          "type": "text"
+        },
+        {
+          "name": "owner_id",
+          "type": "uuid"
+        },
+        {
+          "name": "due_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "due_bucket"
+      ],
+      "clustering_key": [
+        {
+          "name": "story_id",
+          "order": "ASC"
+        },
+        {
+          "name": "action",
+          "order": "ASC"
+        }
+      ],
+      "default_time_to_live": 1209600,
+      "ttl_enabled": true
+    },
+    "story_highlight_items": {
+      "columns": [
+        {
+          "name": "highlight_id",
+          "type": "uuid"
+        },
+        {
+          "name": "story_created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "added_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "visibility",
+          "type": "text"
+        },
+        {
+          "name": "status",
+          "type": "text"
+        }
+      ],
+      "partition_key": [
+        "highlight_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "story_created_at",
+          "order": "ASC"
+        },
+        {
+          "name": "story_id",
+          "order": "ASC"
+        }
+      ]
+    },
+    "story_highlights": {
+      "columns": [
+        {
+          "name": "highlight_id",
+          "type": "uuid"
+        },
+        {
+          "name": "owner_id",
+          "type": "uuid"
+        },
+        {
+          "name": "title",
+          "type": "text"
+        },
+        {
+          "name": "cover_media_id",
+          "type": "uuid"
+        },
+        {
+          "name": "cover_story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "cover_crop",
+          "type": "text"
+        },
+        {
+          "name": "status",
+          "type": "text"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "highlight_id"
+      ],
+      "clustering_key": []
+    },
+    "story_highlights_by_owner": {
+      "columns": [
+        {
+          "name": "owner_id",
+          "type": "uuid"
+        },
+        {
+          "name": "highlight_id",
+          "type": "uuid"
+        },
+        {
+          "name": "title",
+          "type": "text"
+        },
+        {
+          "name": "cover_media_id",
+          "type": "uuid"
+        },
+        {
+          "name": "cover_story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "cover_crop",
+          "type": "text"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "owner_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "highlight_id",
+          "order": "ASC"
+        }
+      ]
+    },
+    "story_highlights_by_story": {
+      "columns": [
+        {
+          "name": "story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "highlight_id",
+          "type": "uuid"
+        },
+        {
+          "name": "owner_id",
+          "type": "uuid"
+        },
+        {
+          "name": "added_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "story_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "highlight_id",
+          "order": "ASC"
+        }
+      ]
+    },
+    "story_items": {
+      "columns": [
+        {
+          "name": "story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "owner_id",
+          "type": "uuid"
+        },
+        {
+          "name": "media_id",
+          "type": "uuid"
+        },
+        {
+          "name": "kind",
+          "type": "text"
+        },
+        {
+          "name": "visibility",
+          "type": "text"
+        },
+        {
+          "name": "status",
+          "type": "text"
+        },
+        {
+          "name": "removed_reason",
+          "type": "text"
+        },
+        {
+          "name": "retention",
+          "type": "text"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "published_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "expires_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "caption",
+          "type": "text"
+        },
+        {
+          "name": "entities",
+          "type": "text"
+        },
+        {
+          "name": "overlay",
+          "type": "text"
+        },
+        {
+          "name": "audio_id",
+          "type": "uuid"
+        },
+        {
+          "name": "place_id",
+          "type": "uuid"
+        },
+        {
+          "name": "mentioned_user_ids",
+          "type": "list<uuid>"
+        },
+        {
+          "name": "tagged",
+          "type": "text"
+        },
+        {
+          "name": "hashtags",
+          "type": "list<text>"
+        },
+        {
+          "name": "content_ref",
+          "type": "text"
+        },
+        {
+          "name": "interactive_element_id",
+          "type": "uuid"
+        },
+        {
+          "name": "interactive_type",
+          "type": "text"
+        },
+        {
+          "name": "add_yours_chain_id",
+          "type": "uuid"
+        },
+        {
+          "name": "media_meta",
+          "type": "text"
+        },
+        {
+          "name": "overlay_media_ids",
+          "type": "list<uuid>"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "story_id"
+      ],
+      "clustering_key": [],
+      "ttl_enabled": true
+    },
+    "story_job_checkpoints": {
+      "columns": [
+        {
+          "name": "job",
+          "type": "text"
+        },
+        {
+          "name": "bucket",
+          "type": "bigint"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "job"
+      ],
+      "clustering_key": []
+    },
+    "story_job_leases": {
+      "columns": [
+        {
+          "name": "job",
+          "type": "text"
+        },
+        {
+          "name": "owner",
+          "type": "text"
+        }
+      ],
+      "partition_key": [
+        "job"
+      ],
+      "clustering_key": [],
+      "default_time_to_live": 90,
+      "ttl_enabled": true
+    },
+    "story_likes": {
+      "columns": [
+        {
+          "name": "story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "liked_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "story_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "user_id",
+          "order": "ASC"
+        }
+      ],
+      "default_time_to_live": 172800,
+      "ttl_enabled": true
+    },
+    "story_owner_active": {
+      "columns": [
+        {
+          "name": "owner_id",
+          "type": "uuid"
+        },
+        {
+          "name": "latest_story_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "active_until",
+          "type": "timestamp"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "owner_id"
+      ],
+      "clustering_key": [],
+      "default_time_to_live": 90000,
+      "ttl_enabled": true
+    },
+    "story_question_responses": {
+      "columns": [
+        {
+          "name": "story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "element_id",
+          "type": "uuid"
+        },
+        {
+          "name": "response_id",
+          "type": "uuid"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "body",
+          "type": "text"
+        },
+        {
+          "name": "responded_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "story_id",
+        "element_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "response_id",
+          "order": "DESC"
+        }
+      ],
+      "ttl_enabled": true
+    },
+    "story_reactions": {
+      "columns": [
+        {
+          "name": "story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "reaction",
+          "type": "text"
+        },
+        {
+          "name": "reacted_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "source",
+          "type": "text"
+        }
+      ],
+      "partition_key": [
+        "story_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "user_id",
+          "order": "ASC"
+        }
+      ],
+      "default_time_to_live": 172800,
+      "ttl_enabled": true
+    },
+    "story_seen_watermarks": {
+      "columns": [
+        {
+          "name": "viewer_id",
+          "type": "uuid"
+        },
+        {
+          "name": "owner_id",
+          "type": "uuid"
+        },
+        {
+          "name": "seen_upto",
+          "type": "timestamp"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "viewer_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "owner_id",
+          "order": "ASC"
+        }
+      ],
+      "default_time_to_live": 172800,
+      "ttl_enabled": true
+    },
+    "story_view_counters": {
+      "columns": [
+        {
+          "name": "story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "views_count",
+          "type": "counter"
+        }
+      ],
+      "partition_key": [
+        "story_id"
+      ],
+      "clustering_key": []
+    },
+    "story_viewers_by_time": {
+      "columns": [
+        {
+          "name": "story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "shard",
+          "type": "int"
+        },
+        {
+          "name": "viewed_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "viewer_id",
+          "type": "uuid"
+        },
+        {
+          "name": "source",
+          "type": "text"
+        }
+      ],
+      "partition_key": [
+        "story_id",
+        "shard"
+      ],
+      "clustering_key": [
+        {
+          "name": "viewed_at",
+          "order": "DESC"
+        },
+        {
+          "name": "viewer_id",
+          "order": "DESC"
+        }
+      ],
+      "default_time_to_live": 172800,
+      "ttl_enabled": true
+    },
+    "story_views": {
+      "columns": [
+        {
+          "name": "story_id",
+          "type": "uuid"
+        },
+        {
+          "name": "viewer_id",
+          "type": "uuid"
+        },
+        {
+          "name": "viewed_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "reaction",
+          "type": "text"
+        }
+      ],
+      "partition_key": [
+        "story_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "viewer_id",
+          "order": "ASC"
+        }
+      ],
+      "default_time_to_live": 172800,
+      "ttl_enabled": true
+    },
+    "user_interactions": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "ts",
+          "type": "timestamp"
+        },
+        {
+          "name": "interaction_id",
+          "type": "timeuuid"
+        },
+        {
+          "name": "kind",
+          "type": "text"
+        },
+        {
+          "name": "target_id",
+          "type": "uuid"
+        }
+      ],
+      "partition_key": [
+        "user_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "ts",
+          "order": "DESC"
+        },
+        {
+          "name": "interaction_id",
+          "order": "DESC"
+        }
+      ],
+      "default_time_to_live": 2592000,
+      "ttl_enabled": true
+    },
+    "video_counters": {
+      "columns": [
+        {
+          "name": "video_id",
+          "type": "uuid"
+        },
+        {
+          "name": "likes_count",
+          "type": "counter"
+        },
+        {
+          "name": "views_count",
+          "type": "counter"
+        },
+        {
+          "name": "comments_count",
+          "type": "counter"
+        },
+        {
+          "name": "shares_count",
+          "type": "counter"
+        },
+        {
+          "name": "saves_count",
+          "type": "counter"
+        }
+      ],
+      "partition_key": [
+        "video_id"
+      ],
+      "clustering_key": []
+    },
+    "video_views_by_video": {
+      "columns": [
+        {
+          "name": "video_id",
+          "type": "uuid"
+        },
+        {
+          "name": "bucket",
+          "type": "int"
+        },
+        {
+          "name": "viewed_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "view_id",
+          "type": "timeuuid"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "watch_ms",
+          "type": "int"
+        }
+      ],
+      "partition_key": [
+        "video_id",
+        "bucket"
+      ],
+      "clustering_key": [
+        {
+          "name": "viewed_at",
+          "order": "DESC"
+        },
+        {
+          "name": "view_id",
+          "order": "DESC"
+        }
+      ],
+      "default_time_to_live": 7776000,
+      "ttl_enabled": true
+    },
+    "videos_by_id": {
+      "columns": [
+        {
+          "name": "video_id",
+          "type": "uuid"
+        },
+        {
+          "name": "owner_id",
+          "type": "uuid"
+        },
+        {
+          "name": "kind",
+          "type": "text"
+        },
+        {
+          "name": "caption",
+          "type": "text"
+        },
+        {
+          "name": "visibility",
+          "type": "text"
+        },
+        {
+          "name": "media_id",
+          "type": "uuid"
+        },
+        {
+          "name": "hls_url",
+          "type": "text"
+        },
+        {
+          "name": "thumbnail_url",
+          "type": "text"
+        },
+        {
+          "name": "duration_ms",
+          "type": "int"
+        },
+        {
+          "name": "sound_id",
+          "type": "uuid"
+        },
+        {
+          "name": "hashtags",
+          "type": "set<text>"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "published_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "video_id"
+      ],
+      "clustering_key": []
+    },
+    "videos_by_user": {
+      "columns": [
+        {
+          "name": "owner_id",
+          "type": "uuid"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "video_id",
+          "type": "uuid"
+        },
+        {
+          "name": "kind",
+          "type": "text"
+        },
+        {
+          "name": "visibility",
+          "type": "text"
+        }
+      ],
+      "partition_key": [
+        "owner_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "created_at",
+          "order": "DESC"
+        },
+        {
+          "name": "video_id",
+          "order": "DESC"
+        }
+      ]
+    },
+    "views_seen_by_video": {
+      "columns": [
+        {
+          "name": "video_id",
+          "type": "uuid"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "name": "first_viewed_at",
+          "type": "timestamp"
+        }
+      ],
+      "partition_key": [
+        "video_id"
+      ],
+      "clustering_key": [
+        {
+          "name": "user_id",
+          "order": "ASC"
+        }
+      ]
+    }
+  }
+}
