@@ -52,6 +52,10 @@ variable "internal_api_key" {
   type      = string
   sensitive = true
 }
+variable "media_url_signing_key" {
+  type      = string
+  sensitive = true
+}
 variable "keyspaces_endpoint" {
   type = string
 }

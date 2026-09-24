@@ -42,6 +42,9 @@ locals {
     JWT_SECRET       = var.jwt_secret
     INTERNAL_API_KEY = var.internal_api_key
 
+    # media-service's key for signed HLS URLs; also from bootstrap-secrets.sh.
+    MEDIA_URL_SIGNING_KEY = var.media_url_signing_key
+
     SCYLLA_NODES    = var.keyspaces_endpoint
     SCYLLA_KEYSPACE = var.keyspaces_keyspace_name
     SCYLLA_USERNAME = var.keyspaces_username

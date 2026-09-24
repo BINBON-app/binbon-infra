@@ -32,6 +32,7 @@
 #   jwt-secret          every issued token stops validating; every user is
 #                       logged out.
 #   internal-api-key    internal calls fail until the whole fleet restarts.
+#   media-url-signing-key  signed media URLs already handed out stop verifying.
 #
 # ROTATING (--force)
 # ------------------
@@ -89,6 +90,7 @@ rotation by hand:
                       password_wo_version, apply clickhouse, and redeploy
   jwt-secret          every user is logged out
   internal-api-key    internal calls fail until every service has redeployed
+  media-url-signing-key  signed media URLs already handed out stop verifying
 
 EOF
   read -r -p "Type the environment prefix (${PREFIX}) to continue: " CONFIRM
@@ -273,15 +275,20 @@ done
 #    identical value. INTERNAL_API_KEY guards internal service-to-service calls
 #    (payment / payout / live -> wallet, and the other privileged endpoints).
 #
-#    Without these, each service falls back to the insecure constants compiled
-#    into the backend (DEV_JWT_SECRET / "dev-internal-key"), and refuses to boot
-#    entirely once APP_ENV=production.
+#    MEDIA_URL_SIGNING_KEY is media-service's HMAC key for signed HLS playlist
+#    URLs (at least 32 bytes; this generates 40).
 #
-#    Rotating either one (--force) invalidates every access token already issued
-#    in this environment, and all services must be redeployed together - a
+#    Without these, each service falls back to the insecure constants compiled
+#    into the backend (DEV_JWT_SECRET / "dev-internal-key" /
+#    DEV_URL_SIGNING_KEY), and refuses to boot or disables the feature once
+#    APP_ENV=production.
+#
+#    Rotating the first two (--force) invalidates every access token already
+#    issued in this environment, and all services must be redeployed together - a
 #    service still holding the old value rejects tokens minted with the new one.
+#    Rotating the signing key only breaks signed media URLs already handed out.
 # ---------------------------------------------------------------------------
-for pair in "jwt-secret" "internal-api-key"; do
+for pair in "jwt-secret" "internal-api-key" "media-url-signing-key"; do
   NAME="${PREFIX}-${pair}"
   if needs_value "$NAME"; then
     VALUE=$(random_password)

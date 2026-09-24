@@ -47,6 +47,14 @@ locals {
     "--query", "SecretString",
     "--output", "text"
   )
+  media_url_signing_key = run_cmd(
+    "--terragrunt-quiet",
+    "aws", "secretsmanager", "get-secret-value",
+    "--secret-id", "binbon-${local.env.locals.environment}-media-url-signing-key",
+    "--region", "eu-central-1",
+    "--query", "SecretString",
+    "--output", "text"
+  )
 }
 terraform {
   source = dirname(find_in_parent_folders("modules/secrets/main.tf"))
@@ -136,6 +144,8 @@ inputs = {
 
   jwt_secret       = local.jwt_secret
   internal_api_key = local.internal_api_key
+
+  media_url_signing_key = local.media_url_signing_key
 
   keyspaces_endpoint      = dependency.data.outputs.keyspaces_endpoint
   keyspaces_keyspace_name = dependency.data.outputs.keyspace_name

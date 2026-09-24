@@ -35,7 +35,7 @@ env=read_terragrunt_config(find_in_parent_folders("env.hcl"))
     "user-service"              = ["DATABASE_URL", "INTERNAL_API_KEY", "JWT_SECRET", "KAFKA_BROKERS", "REDIS_URL"]
     "device-service"            = ["DATABASE_URL", "INTERNAL_API_KEY", "JWT_SECRET", "REDIS_URL"]
     "rbac-service"              = ["DATABASE_URL", "INTERNAL_API_KEY", "JWT_SECRET", "REDIS_URL"]
-    "media-service"             = ["DATABASE_URL", "INTERNAL_API_KEY", "JWT_SECRET", "KAFKA_BROKERS", "REDIS_URL", "S3_ACCESS_KEY", "S3_BUCKET", "S3_ENDPOINT", "S3_REGION", "S3_SECRET_KEY", "CDN_BASE_URL"]
+    "media-service"             = ["DATABASE_URL", "INTERNAL_API_KEY", "JWT_SECRET", "KAFKA_BROKERS", "MEDIA_URL_SIGNING_KEY", "REDIS_URL", "S3_ACCESS_KEY", "S3_BUCKET", "S3_ENDPOINT", "S3_REGION", "S3_SECRET_KEY", "CDN_BASE_URL"]
     "video-processing-service"  = ["DATABASE_URL", "JWT_SECRET", "KAFKA_BROKERS", "REDIS_URL", "S3_ACCESS_KEY", "S3_BUCKET", "S3_ENDPOINT", "S3_REGION", "S3_SECRET_KEY", "CDN_BASE_URL"]
     "feed-service"              = ["INTERNAL_API_KEY", "JWT_SECRET", "KAFKA_BROKERS", "REDIS_URL", "SCYLLA_KEYSPACE", "SCYLLA_NODES", "SCYLLA_USERNAME", "SCYLLA_PASSWORD"]
     "engagement-service"        = ["JWT_SECRET", "KAFKA_BROKERS", "REDIS_URL", "SCYLLA_KEYSPACE", "SCYLLA_NODES", "SCYLLA_USERNAME", "SCYLLA_PASSWORD"]
@@ -107,7 +107,7 @@ env=read_terragrunt_config(find_in_parent_folders("env.hcl"))
       REPORT_SERVICE_URL     = "http://report-service:8108"
       MODERATION_SERVICE_URL = "http://moderation-service:8109"
     }
-    "auth-service" = { RBAC_GRPC_URL = "http://rbac-grpc:9084" }
+    "auth-service" = { RBAC_GRPC_URL = "http://rbac-grpc:9084", NOTIFICATION_INTERNAL_URL = "http://notification-service:8101" }
   }
 }
 terraform {
