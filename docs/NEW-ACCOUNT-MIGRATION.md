@@ -844,7 +844,92 @@ python3 scripts/check-service-config.py --infra ../binbon-aws-terraform-complete
 
 ---
 
+## 20. OTP and email delivery
+
+auth-service issues OTPs and hands them to notification-service
+(`/internal/notifications/message`), which delivers them through
+`MESSAGE_TRANSPORT`. **Right now nothing is delivered on dev.** Two things were
+in the way; the first is fixed.
+
+1. **auth couldn't reach notification.** Without `NOTIFICATION_INTERNAL_URL`
+   it used `http://localhost:8101`. Every OTP dispatch failed and the verify
+   request failed closed (`otp.dispatch … failing closed`). It is now set in
+   `internal_service_urls`, and step 19's check catches a regression.
+2. **notification has no real transport.** No SMTP or SMS settings are
+   configured, so it runs the default `log` transport, which only writes
+   `would send to redacted recipient (log transport)`.
+
+### Until email exists: the fixed code (dev only)
+
+Dev's `env.hcl` sets `OTP_FIXED_CODE` on auth-service, so every OTP it issues
+is that one code; the value is in `env.hcl`. Testers request a code as usual,
+then type the fixed one.
+
+- Only the issued code changes. Expiry, the five-attempt ceiling, the rate
+  limits and the binding to the contact are untouched.
+- auth **refuses to start** with it unless `APP_ENV` is explicitly `dev`,
+  `development`, `local` or `test`, and logs `OTP_FIXED_CODE is set` at startup.
+- Anyone who knows the code can verify any dev account.
+
+> [!WARNING]
+> Never copy `OTP_FIXED_CODE` to staging or prod `env.hcl`. auth would refuse
+> to start there anyway, but the guard shouldn't be what catches it. Remove it
+> from dev once real email is delivered.
+
+### Real email through SES
+
+**Infra:**
+
+- **Sending identity:** an SES domain identity in Terraform. It outputs three
+  DKIM CNAMEs; add SPF and DMARC too, so mail doesn't land in spam.
+- **SMTP credentials:** an SMTP-only IAM user, restricted to sending from that
+  domain. Its SMTP password is the access key's `ses_smtp_password_v4`. Put the
+  pair into `infra-secrets` as `SMTP_USERNAME` / `SMTP_PASSWORD`; the key also
+  ends up in the encrypted Terraform state.
+- **notification-service:**
+  - `MESSAGE_TRANSPORT=smtp,log`: email goes through SES, and SMS keeps `log`;
+  - `SMTP_HOST=email-smtp.<region>.amazonaws.com`, `SMTP_PORT=587`,
+    `SMTP_FROM`;
+  - the two secrets added to its `service_secret_keys`.
+- **Bounces and complaints:** an SES configuration set sending them to SNS.
+  Recommended, and it helps a production-access request.
+- **Network:** nothing to change. Tasks already reach the internet through the
+  NAT gateway with unrestricted egress.
+- **Finish:** apply `secrets` and `services`, redeploy notification one service
+  at a time (step 19), then remove `OTP_FIXED_CODE`.
+
+**Outside Terraform:**
+
+- **Choose the sender domain.** The code's default is `binbon.app`, while the
+  certificates are for `binbon.ch`.
+- **Add the DNS records at the registrar.** There are no Route 53 zones, so
+  this is manual, like ACM validation (step 14a).
+- **Leave the SES sandbox.** New accounts only send to verified addresses, 200
+  a day. Verify each tester's address, or request production access in the SES
+  console (usually about a day).
+
+**Code:**
+
+- **Email needs no change.** The `smtp` transport already speaks STARTTLS on
+  587 with login credentials, and bundles its own root certificates (lettre
+  with `webpki-roots`).
+- **SMS does need work.** The `http` transport POSTs `{to, from, body}` as JSON
+  with one auth header. SNS (it needs SigV4) and Twilio (form-encoded, basic
+  auth) don't accept that. Phone OTPs need a provider that takes that shape, an
+  adapter (for example a Lambda calling SNS), or a new transport.
+- **Production refuses `log`.** notification won't start with `log` in its
+  transport list in production, so prod needs `smtp,http` with both wired.
+
+---
+
 ## Post-migration notes
+
+- **Dev-only switches.** Dev's `env.hcl` turns on two things the other
+  environments must decide on separately. The first is `OTP_FIXED_CODE` on
+  auth (step 20). The second is `MEDIA_PRIVATE_ACCESS_ENABLED` on media: with
+  it off, documents, view-once and `access=private` uploads answer 503
+  `media_private_access`. Private access also needs `MEDIA_URL_SIGNING_KEY`
+  and `INTERNAL_API_KEY`, and in production a non-empty `MEDIA_HLS_BASE_URL`.
 
 - **SASL mechanism.** The backend supports `SCRAM-SHA-256` (default),
   `SCRAM-SHA-512` and `PLAIN`, selected by `KAFKA_SASL_MECHANISM`. Nothing in the
