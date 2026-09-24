@@ -130,9 +130,16 @@ grep -c '<new-account-id>' terragrunt/envs/dev/eu-central-1/env.hcl
 
 ## 6. Populate Secrets Manager
 
-Export the credentials from step 1, then run the bootstrap. It creates ~25
-secrets, generating the platform-wide ones (`JWT_SECRET`, `INTERNAL_API_KEY`) and
-one `REDPANDA_SASL_PASSWORD` per service.
+Export the credentials from step 1, then run the bootstrap. It creates ~27
+secrets. It generates the three platform-wide ones (`JWT_SECRET`,
+`INTERNAL_API_KEY` and media-service's `MEDIA_URL_SIGNING_KEY`) and one
+`REDPANDA_SASL_PASSWORD` per service.
+
+**Run it before the first `secrets` apply.** `components/secrets.hcl` reads the
+three platform-wide secrets back into the shared `infra-secrets` JSON, so the
+`secrets` plan fails if one doesn't exist. On an account bootstrapped before
+`MEDIA_URL_SIGNING_KEY` existed, re-run the script once: it creates only that
+secret.
 
 ```bash
 export AWS_PROFILE=<new-account-profile>
@@ -169,6 +176,7 @@ Restore the secret or wait for the deletion to finish.
 > | ClickHouse admin password | The same write-only mechanism; analytics can't connect. Bump the clickhouse `password_wo_version`, apply `clickhouse`, redeploy. |
 > | `JWT_SECRET` | Every issued token stops validating — **every user is logged out**. |
 > | `INTERNAL_API_KEY` | Internal calls fail until every service has redeployed. |
+> | `MEDIA_URL_SIGNING_KEY` | Signed media (HLS) URLs already handed out stop verifying. |
 >
 > Because of that, `--force` shows this list, **requires typing the environment
 > prefix** (`binbon-dev`) to continue, and refuses to run without a terminal — it
@@ -344,6 +352,26 @@ roll back, rather than as a green fleet that silently can't publish.
 >
 > Each line names the feature and the missing table or option. Step 18 covers
 > the fix and the pre-merge check.
+
+> [!WARNING]
+> `HEALTHY` doesn't prove a service got its **config** either. Many variables
+> fall back to a dev value when unset, and the service starts normally:
+>
+> - 10 services never got `INTERNAL_API_KEY` and used the placeholder compiled
+>   into the source. notification-service, which had the real key, got 401 from
+>   user-service for hours.
+> - auth-service never got `NOTIFICATION_INTERNAL_URL`, so every OTP went to
+>   `localhost` and the verify request failed closed.
+>
+> Look for them directly:
+>
+> ```bash
+> aws logs filter-log-events --log-group-name /ecs/binbon-dev/notification-service \
+>   --filter-pattern '?"INTERNAL_API_KEY differs" ?"is not configured"' \
+>   --start-time $(( ($(date +%s) - 3600) * 1000 ))
+> ```
+>
+> Step 19 covers the pre-merge check.
 
 ---
 
@@ -604,7 +632,8 @@ python3 scripts/check-kafka-infra.py --infra ../binbon-aws-terraform-complete --
 
 The check runs in the backend repo but reads this one, which is private, and a
 workflow's built-in token can only see its own repository. It uses a repository
-secret on `official-backend-rust`:
+secret on `official-backend-rust`, which the Keyspaces (step 18) and service
+config (step 19) checks share:
 
 | | |
 |---|---|
@@ -742,6 +771,76 @@ python3 scripts/check-keyspaces-infra.py --infra ../binbon-aws-terraform-complet
 > required. `story_moderation` is one: the story docs say the platform spec
 > owns its shape, and no statement uses it yet. Provision it when that code
 > lands, and the check will require it from then on.
+
+## 19. Service config consistency
+
+Each service's environment and secrets are assembled here, in
+`components/services.hcl` and `env.hcl`, while the code that reads them lives in
+the backend. Nothing linked the two. The worst drift is a variable whose default
+is a **dev fallback**: the service starts normally and quietly misbehaves.
+
+- **`INTERNAL_API_KEY`:** 10 services never got it. They used the placeholder
+  compiled into the source, so they could talk to each other but got 401 from
+  the 12 services that had the real key.
+- **`NOTIFICATION_INTERNAL_URL`:** auth-service never got it, so every OTP went
+  to `localhost` and the verify request failed closed.
+- **`MEDIA_URL_SIGNING_KEY`:** media-service never got it, so it signed HLS URLs
+  with a key anyone could read in the source. In production that route would
+  have answered 503 instead.
+
+### The check
+
+`service-config-check.yml` in the **backend** repo runs
+`scripts/check-service-config.py` against this repo's `main`, with the same
+triggers and the same `INFRA_REPO_TOKEN` as the other two checks (step 17a).
+For each service it fails when the code reads a variable in a way where "unset"
+is a crash or a silent fallback, and the infra doesn't set it:
+
+| read in code | when unset |
+|---|---|
+| `require(K)` | startup error |
+| `secret_or_dev(K, dev)` | silently uses the dev placeholder |
+| `internal_secret(svc, K, dev)` | dev placeholder outside production; the features are disabled in production |
+| `optional(K, default)` with a `DEV_*`, `"dev-…"` or `localhost` default | silently uses that default |
+| `redis_url(..)`, `database_url(..)` | a local Redis or Postgres |
+
+`optional_secret(K)` and `database_url_opt()` are **notes only**, because unset
+there is a supported "feature off" state. The current notes are the places API,
+link previews, GIFs and recommendation's database. Mode switches with a plain
+default, such as `RTC_MODE="dev"`, are product choices and aren't flagged.
+
+What the infra provides is worked out from the same sources `services.hcl`
+merges:
+
+- `env.hcl` `environment` and `secret_arns`;
+- Cognito, and the Redpanda credentials when `redpanda_user` is set;
+- the Keyspaces flags, `internal_service_urls` and `DB_*` for
+  `postgres_service_databases`;
+- `HEALTH_REQUIRES_KAFKA` and `service_secret_keys`, where `DATABASE_URL` is
+  dropped;
+- what the backend's deploy workflow adds (`ensure_env`).
+
+That derivation was checked against the live dev task definitions and matched
+all 31 services exactly.
+
+**To fix a gap**, add the variable here, apply `services`, and redeploy the
+service through the backend CI so its revision picks it up:
+
+| the variable is… | put it in |
+|---|---|
+| a shared secret that already exists | that service's `service_secret_keys` entry |
+| a URL of another service | `internal_service_urls`, as `http://<service>:<port>` (Service Connect) |
+| plain config | the service's `environment` in `env.hcl` |
+| a **new** generated secret | `bootstrap-secrets.sh`, then `components/secrets.hcl` and `modules/secrets`, then `service_secret_keys`. Re-run the bootstrap, then apply `secrets` and `services`. `MEDIA_URL_SIGNING_KEY` was added this way. |
+
+```bash
+python3 scripts/check-service-config.py --infra ../binbon-aws-terraform-complete --env dev
+```
+
+> [!NOTE]
+> The deploy workflow allows only one pending run per environment, and a newer
+> dispatch cancels an older one that's still queued. When several services
+> need redeploying, dispatch them **one at a time** and wait for each to finish.
 
 ---
 
