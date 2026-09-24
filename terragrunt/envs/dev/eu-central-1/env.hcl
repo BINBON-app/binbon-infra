@@ -80,7 +80,7 @@ locals {
       }, secret_arns = {
       }, redpanda_user = null, task_policy_json = null
     }
-    media-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:media-service-replace", container_port = 8085, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev"
+    media-service = { image = "803817915623.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:media-service-replace", container_port = 8085, cpu = 512, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev", MEDIA_PRIVATE_ACCESS_ENABLED = "true"
       }, secret_arns = {
       }, redpanda_user = "media-service", task_policy_json = null
     }
