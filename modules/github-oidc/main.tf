@@ -99,6 +99,37 @@ resource "aws_iam_role_policy" "ecs_deploy" {
         Effect   = "Allow"
         Action   = "iam:PassRole"
         Resource = local.iam_role_resource
+      },
+      {
+        # The schema provision step: a one-off `<service> provision` task run
+        # from a "<family>-provision" task definition before the service is
+        # updated, then waited on and its exit code checked.
+        Sid      = "RunProvisionTask"
+        Effect   = "Allow"
+        Action   = "ecs:RunTask"
+        Resource = "arn:${data.aws_partition.current.partition}:ecs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:task-definition/*-provision:*"
+      },
+      {
+        Sid      = "WatchProvisionTask"
+        Effect   = "Allow"
+        Action   = "ecs:DescribeTasks"
+        Resource = "arn:${data.aws_partition.current.partition}:ecs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:task/${var.name}-*/*"
+      },
+      {
+        # Only to print the provision task's own output in the job log.
+        Sid      = "ReadProvisionLogs"
+        Effect   = "Allow"
+        Action   = "logs:GetLogEvents"
+        Resource = "arn:${data.aws_partition.current.partition}:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/${var.name}-*:log-stream:*"
+      },
+      {
+        # Resolve the provisioner secret's full ARN (its random suffix) to
+        # reference it from the provision task definition. Metadata only - no
+        # GetSecretValue.
+        Sid      = "FindProvisionerSecret"
+        Effect   = "Allow"
+        Action   = "secretsmanager:DescribeSecret"
+        Resource = "arn:${data.aws_partition.current.partition}:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:${var.name}-*-keyspaces-provisioner-*"
       }
     ]
   })

@@ -108,6 +108,45 @@ resource "aws_iam_service_specific_credential" "keyspaces" {
   user_name    = aws_iam_user.keyspaces.name
   service_name = "cassandra.amazonaws.com"
 }
+
+# The schema provisioner (`<service> provision`, run by the backend deploy
+# pipeline before a revision rolls out). Separate from the app user above so
+# the running services never hold DDL rights: this one may CREATE and ALTER
+# tables in the app keyspace and read the system schema, and deliberately has
+# no cassandra:Drop - provisioning is additive only.
+resource "aws_iam_user" "keyspaces_provisioner" {
+  name = "${var.name}-keyspaces-provisioner"
+  tags = var.tags
+}
+resource "aws_iam_user_policy" "keyspaces_provisioner" {
+  name = "keyspaces-provision"
+  user = aws_iam_user.keyspaces_provisioner.name
+  policy = jsonencode({ Version = "2012-10-17", Statement = [
+    { Effect = "Allow", Action = ["cassandra:Create", "cassandra:Alter", "cassandra:Select"], Resource = [
+      "arn:aws:cassandra:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:/keyspace/${aws_keyspaces_keyspace.this.name}/",
+      "arn:aws:cassandra:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:/keyspace/${aws_keyspaces_keyspace.this.name}/*"
+    ] },
+    { Effect = "Allow", Action = ["cassandra:Select"], Resource = "arn:aws:cassandra:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:/keyspace/system*" }
+  ] })
+}
+resource "aws_iam_service_specific_credential" "keyspaces_provisioner" {
+  user_name    = aws_iam_user.keyspaces_provisioner.name
+  service_name = "cassandra.amazonaws.com"
+}
+# The provision task takes SCYLLA_USERNAME / SCYLLA_PASSWORD from here instead
+# of the shared infra-secrets entry the services use.
+resource "aws_secretsmanager_secret" "keyspaces_provisioner" {
+  name       = "${var.name}-keyspaces-provisioner"
+  kms_key_id = var.kms_key_arn
+  tags       = var.tags
+}
+resource "aws_secretsmanager_secret_version" "keyspaces_provisioner" {
+  secret_id = aws_secretsmanager_secret.keyspaces_provisioner.id
+  secret_string = jsonencode({
+    SCYLLA_USERNAME = aws_iam_service_specific_credential.keyspaces_provisioner.service_user_name
+    SCYLLA_PASSWORD = aws_iam_service_specific_credential.keyspaces_provisioner.service_password
+  })
+}
 resource "aws_keyspaces_table" "this" {
   for_each = var.keyspaces_tables
 

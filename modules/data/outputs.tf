@@ -30,3 +30,7 @@ output "aurora_cluster_arn" {
   description = "Cluster ARN, needed to run admin SQL over the RDS Data API."
   value       = aws_rds_cluster.aurora.arn
 }
+output "keyspaces_provisioner_secret_arn" {
+  description = "Secret holding the schema provisioner's SCYLLA_USERNAME / SCYLLA_PASSWORD (JSON keys)."
+  value       = aws_secretsmanager_secret.keyspaces_provisioner.arn
+}
