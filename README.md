@@ -23,7 +23,7 @@
 | 🟦 **Network** | VPC, 3 subnet tiers, NAT, Flow Logs | Multi-AZ private foundation |
 | 🟩 **Compute** | ALB, ECS Fargate, ECR, IAM, CloudWatch | Containerised microservices with autoscaling |
 | 🟪 **Data** | Aurora Serverless v2, ElastiCache Serverless, Keyspaces, OpenSearch, ClickHouse Cloud | PostgreSQL, Redis, wide-column, search and OLAP analytics |
-| 🟨 **Edge & media** | Route 53, CloudFront, WAF (managed rule groups + rate limiting), S3, MediaConvert | Secure global delivery, bot/abuse filtering and media handling |
+| 🟨 **Edge & media** | WAF on the ALB (managed rule groups + rate limiting), CloudFront for media, S3, MediaConvert | Abuse filtering in front of the API, and media delivery |
 | 🟥 **Identity** | none in AWS | Login lives in the backend: auth-service issues OTPs and signs its own JWTs with `JWT_SECRET` |
 | 🟧 **Events** | Redpanda Serverless + AWS PrivateLink | Kafka-compatible event streaming |
 | ⚙️ **Operations** | KMS, Secrets Manager hooks, remote state bootstrap | Encryption, logs and state management |
@@ -41,9 +41,8 @@
 | :-- | :-- |
 | Terraform `>= 1.6` + Terragrunt `>= 0.66` | Provision and orchestrate the stack |
 | AWS credentials / CI role | Access the target AWS account |
-| Route 53 hosted zone | Needed only for custom DNS |
 | ACM certificate in `eu-central-1` | ALB HTTPS listener |
-| ACM certificate in `us-east-1` | CloudFront custom domain |
+| ACM certificate in `us-east-1` | Only for a custom domain on the media CloudFront |
 | Redpanda Cloud service account | Needed only for the Redpanda stack |
 | ClickHouse Cloud organization + API key | Needed only for the ClickHouse stack |
 
@@ -107,10 +106,9 @@ terragrunt run-all plan
 ```text
 network
   ├── foundation ──┬── alb ──┬── data
-  │                │        ├── edge ── waf-cloudfront
-  │                │        └── opensearch
+  │                │   │    └── opensearch
+  │                │   └── waf-regional
   │                └── media ── waf-cloudfront
-  ├── waf-regional
   ├── clickhouse
   └── redpanda ── redpanda-endpoint
                        │
@@ -127,9 +125,8 @@ network
 | `opensearch` | VPC-attached OpenSearch domain | `network`, `foundation`, `alb` |
 | `clickhouse` | ClickHouse Cloud service | `network` (NAT egress IP allow-list) |
 | `media` | Private S3, CloudFront and MediaConvert role | `foundation`, `waf-cloudfront` |
-| `edge` | Application CloudFront and optional DNS | `alb`, `waf-cloudfront` |
 | `waf-cloudfront` | CloudFront-scope WAF Web ACL (`us-east-1`) | — |
-| `waf-regional` | Regional-scope WAF Web ACL (`eu-central-1`) | — |
+| `waf-regional` | Regional-scope WAF Web ACL (`eu-central-1`), attached to the ALB | — |
 | `redpanda` | Serverless cluster, topics, users and ACLs | — |
 | `redpanda-endpoint` | AWS PrivateLink endpoint and private DNS | `network`, `alb`, `redpanda` |
 | `services` | ECS tasks and autoscaling | Platform dependencies above |
@@ -232,8 +229,10 @@ aws ecs wait services-stable --cluster binbon-dev --services api-gateway
 
 Two separate Web ACLs exist because AWS WAF scopes are not interchangeable:
 
-- `waf-cloudfront` — scope `CLOUDFRONT`, must be created in `us-east-1` regardless of where the rest of the platform runs. Attached to both the application and media CloudFront distributions.
-- `waf-regional` — scope `REGIONAL`, created in `eu-central-1`. Attached to nothing at present: it protected the Cognito User Pool, which was removed as unused. The ALB is the natural place for it; its common rule set's 8 KB `SizeRestrictions_BODY` would first need to count rather than block, because multipart uploads pass through api-gateway.
+- `waf-cloudfront` — scope `CLOUDFRONT`, must be created in `us-east-1` regardless of where the rest of the platform runs. Attached to the media CloudFront distribution.
+- `waf-regional` — scope `REGIONAL`, created in `eu-central-1`. Attached to the ALB, so it sits in front of every API request. In its common rule set, `SizeRestrictions_BODY` only **counts** (`common_rules_count_only`): it blocks bodies over 8 KB, and multipart uploads go through api-gateway. Requests without a `User-Agent` header are blocked (`NoUserAgent_HEADER`).
+
+There is no CloudFront in front of the API. It used to be planned (the `edge` component), but API responses are per user and can't be cached, so it added cost and a second WAF without much benefit. The ALB, its WAF and Terraform-owned HTTPS replace it.
 
 Both ship with a per-IP rate-based rule (`rate_limit`, default 2000 requests/5 minutes) plus the AWS managed rule groups `AWSManagedRulesCommonRuleSet`, `AWSManagedRulesKnownBadInputsRuleSet`, and `AWSManagedRulesAmazonIpReputationList`. Adjust `rate_limit` per environment in `terragrunt/components/waf-cloudfront.hcl` / `waf-regional.hcl` if traffic patterns require it.
 

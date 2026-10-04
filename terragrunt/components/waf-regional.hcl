@@ -22,6 +22,8 @@ env=read_terragrunt_config(find_in_parent_folders("env.hcl"))
 terraform {
 source=dirname(find_in_parent_folders("modules/waf/main.tf"))
 }
+# Attached to the ALB (components/alb.hcl). SizeRestrictions_BODY only counts:
+# it blocks bodies over 8 KB, and multipart uploads go through api-gateway.
 inputs={
-name="binbon-${local.env.locals.environment}-regional",scope="REGIONAL",rate_limit=2000,tags=local.tags
+name="binbon-${local.env.locals.environment}-regional",scope="REGIONAL",rate_limit=2000,common_rules_count_only=["SizeRestrictions_BODY"],tags=local.tags
 }

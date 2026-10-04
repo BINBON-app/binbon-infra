@@ -107,3 +107,8 @@ resource "aws_lb_listener_certificate" "additional" {
   listener_arn    = aws_lb_listener.https[0].arn
   certificate_arn = each.value
 }
+resource "aws_wafv2_web_acl_association" "this" {
+  count        = var.waf_web_acl_arn == null ? 0 : 1
+  resource_arn = aws_lb.this.arn
+  web_acl_arn  = var.waf_web_acl_arn
+}

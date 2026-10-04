@@ -25,3 +25,8 @@ variable "tags" {
   type    = map(string)
   default = {}
 }
+variable "waf_web_acl_arn" {
+  description = "Regional WAF web ACL to attach to the load balancer. Null attaches none."
+  type        = string
+  default     = null
+}

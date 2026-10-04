@@ -28,6 +28,12 @@ config_path="../network"
 }
  mock_outputs_allowed_terraform_commands=["init","validate","plan","destroy"] 
 }
+dependency "waf_regional" {
+config_path="../waf-regional"
+ mock_outputs={web_acl_arn="arn:aws:wafv2:eu-central-1:123456789012:regional/webacl/mock/00000000-0000-0000-0000-000000000000"
+}
+ mock_outputs_allowed_terraform_commands=["init","validate","plan","destroy"]
+}
 inputs={
-name="binbon-${local.env.locals.environment}",vpc_id=dependency.network.outputs.vpc_id,public_subnet_ids=dependency.network.outputs.public_subnet_ids,certificate_arn=local.env.locals.alb_certificate_arn,additional_certificate_arns=try(local.env.locals.alb_additional_certificate_arns,[]),tags=local.tags 
+name="binbon-${local.env.locals.environment}",vpc_id=dependency.network.outputs.vpc_id,public_subnet_ids=dependency.network.outputs.public_subnet_ids,certificate_arn=local.env.locals.alb_certificate_arn,additional_certificate_arns=try(local.env.locals.alb_additional_certificate_arns,[]),waf_web_acl_arn=dependency.waf_regional.outputs.web_acl_arn,tags=local.tags 
 }

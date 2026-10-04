@@ -2,8 +2,6 @@ locals {
   environment                = "dev"
   region                     = "eu-central-1"
   account_id                 = "922640336342"
-  domain_name                = null
-  route53_zone_id            = null
   # api.dev.binbon.ch as the default certificate, *.binbon.ch over SNI. Both
   # requested with scripts/request-certs.sh and DNS-validated at the registrar.
   alb_certificate_arn             = "arn:aws:acm:eu-central-1:922640336342:certificate/d0f44208-5f88-4c93-bf87-171296a680a6"

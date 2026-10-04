@@ -13,6 +13,11 @@ variable "rate_limit" {
   type        = number
   default     = 2000
 }
+variable "common_rules_count_only" {
+  description = "Rules of AWSManagedRulesCommonRuleSet to count instead of block, e.g. SizeRestrictions_BODY where requests legitimately carry bodies over 8 KB."
+  type        = list(string)
+  default     = []
+}
 variable "tags" {
   type    = map(string)
   default = {}

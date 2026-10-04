@@ -58,7 +58,7 @@ day one, because AWS can take a day or more to act on either.
 | limit | symptom | fix |
 |---|---|---|
 | **Fargate On-Demand vCPU**, 6 by default | only 12 of the 31 services (0.5 vCPU each) can run; a full-fleet deploy needs about 31 | Service Quotas → AWS Fargate → `L-3032A538`; ask for 64 |
-| **CloudFront** is off until AWS verifies the account | `media` and `edge` fail: *"Your account must be verified before you can add new CloudFront resources"* | a Support case (Account and billing), quoting the error |
+| **CloudFront** is off until AWS verifies the account | `media` fails: *"Your account must be verified before you can add new CloudFront resources"* | a Support case (Account and billing), quoting the error |
 
 ```bash
 aws service-quotas request-service-quota-increase --service-code fargate \
@@ -1052,6 +1052,15 @@ then type the fixed one.
 
 ## Post-migration notes
 
+- **The API's WAF is on the ALB.** `waf-regional` is attached to the ALB:
+  rate limit 2000 per IP per 5 minutes, AWS common rules, known bad inputs and
+  IP reputation. There is no CloudFront in front of the API; the `edge`
+  component was dropped. `SizeRestrictions_BODY` only counts, because
+  multipart uploads over 8 KB go through api-gateway. Two things look like app
+  bugs and aren't. A request **without a `User-Agent`** gets 403
+  (`NoUserAgent_HEADER`). User text containing script tags or file paths can
+  get 403 from the XSS and LFI body rules. Check the web ACL's sampled
+  requests before debugging the service.
 - **The deploy signs in through OIDC.** The backend's deploy assumes
   `binbon-github-ecs-deploy` for two hours, so no AWS keys are stored in
   GitHub (step 10). The role has to allow every call the workflow makes. It
