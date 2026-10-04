@@ -1,8 +1,9 @@
 # Migrating the platform to a new AWS account
 
 A step-by-step runbook for standing this stack up in a fresh AWS account, written
-from an actual migration (account `995192978674` → `803817915623`, `eu-central-1`)
-rather than from the design docs. Every step that bit us in practice is called
+from two actual migrations rather than from the design docs: `995192978674` →
+`803817915623`, then `803817915623` → `922640336342` (with new Redpanda and
+ClickHouse organizations), both in `eu-central-1`. Every step that bit us in practice is called
 out, including two that fail on the first run **by design of the AWS services
 involved** and simply need a second pass.
 
@@ -48,6 +49,43 @@ Collect these **before** starting. Several steps block without them.
   ```
   `DryRunOperation: Request would have succeeded` means the subscription is live.
   An `OptInRequired` error means it is not — accept it in the Marketplace console.
+
+### New-account limits
+
+A brand-new AWS account has two limits that stop this stack. Raise both on
+day one, because AWS can take a day or more to act on either.
+
+| limit | symptom | fix |
+|---|---|---|
+| **Fargate On-Demand vCPU**, 6 by default | only 12 of the 31 services (0.5 vCPU each) can run; a full-fleet deploy needs about 31 | Service Quotas → AWS Fargate → `L-3032A538`; ask for 64 |
+| **CloudFront** is off until AWS verifies the account | `media` and `edge` fail: *"Your account must be verified before you can add new CloudFront resources"* | a Support case (Account and billing), quoting the error |
+
+```bash
+aws service-quotas request-service-quota-increase --service-code fargate \
+  --quota-code L-3032A538 --desired-value 64 --region eu-central-1
+```
+
+If dev has to run before AWS answers, dev's `env.hcl` has a TEMPORARY switch
+for each:
+
+- `media_cloudfront_enabled = false` builds `media` without its distribution.
+  `secrets` then writes an empty `CDN_BASE_URL`, and the services serve
+  presigned S3 URLs. Without it, `secrets` and `services` can't apply,
+  because `secrets` reads media's CloudFront address.
+- `cpu = 256` per service fits all 31 in 7.75 vCPU, with room for one
+  deployment at a time.
+
+Undo both once the limits lift.
+
+### New Redpanda and ClickHouse organizations
+
+Signing up creates sample resources. Delete them before the first apply:
+
+- **ClickHouse** creates a service named after the organization. If that name
+  matches `binbon-<env>` in any case, the apply fails with
+  `409 DUPLICATE_INSTANCE_NAME`, because ClickHouse names ignore case.
+- **Redpanda** creates a `welcome` serverless cluster and a `default` resource
+  group. They don't conflict, but the cluster uses trial credit.
 
 > [!IMPORTANT]
 > Credentials are **never** committed and never written to a local file that
@@ -221,6 +259,35 @@ does not exist. If the role already exists you get
 It is set to `false` today because the reference account already has the role.
 
 Expect roughly **470 resources** and 30–45 minutes; Aurora and OpenSearch dominate.
+Run it where nothing will cut it short. OpenSearch alone took 14 minutes in
+the reference migration.
+
+### If an apply is interrupted
+
+Killing an apply mid-run leaves two kinds of mess, and both need clearing
+before the next run:
+
+1. **Stale state locks.** List them, confirm no `terraform` process is still
+   running, then release each one:
+   ```bash
+   aws dynamodb scan --table-name binbon-bootstrap-tf-lock \
+     --query 'Items[?Info!=`null`].Info.S' --output text
+   ./scripts/tg.sh <component> force-unlock -force <ID from Info>
+   ```
+2. **Resources that exist but aren't in state.** Anything still being created
+   when the run died is there in AWS or Redpanda, but the state doesn't know
+   about it. The next apply then fails with *already exists*. Import each one
+   rather than deleting it:
+   ```bash
+   ./scripts/tg.sh data import 'aws_keyspaces_table.this["<table>"]' <keyspace>/<table>
+   ./scripts/tg.sh redpanda import redpanda_resource_group.this <id>
+   ./scripts/tg.sh redpanda import 'redpanda_topic.this["<topic>"]' '<topic>,<cluster id>'
+   ```
+   Compare each component's `state list` with what exists to find them.
+
+Redpanda's data plane sometimes drops a `CreateTopic` with *"the broker
+connection has died"*. The retry usually goes through anyway, so the next
+apply reports the topic *already exists*. Import it the same way.
 
 ---
 
