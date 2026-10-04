@@ -122,7 +122,7 @@ Note the `state_bucket` and `lock_table` outputs.
 
 ## 4. Repoint every reference to the new state bucket
 
-The bucket name is **hardcoded in 21 files** (`root.hcl`, the 16 component
+The bucket name is **hardcoded in 18 files** (`root.hcl`, the 16 component
 files, and `github-oidc/terragrunt.hcl`) so each component's `remote_state`
 resolves without an `include`. Rewrite them all at once:
 
@@ -137,8 +137,15 @@ Then **clear the Terragrunt caches**, or the old backend config is reused and yo
 get confusing "bucket does not exist" failures:
 
 ```bash
-find terragrunt -type d -name '.terragrunt-cache' -prune -exec rm -rf {} +
+find terragrunt -type d -name '.terragrunt-cache' -prune \
+  -not -path 'terragrunt/bootstrap/*' -exec rm -rf {} +
 ```
+
+> [!CAUTION]
+> Leave `terragrunt/bootstrap`'s cache alone. Bootstrap keeps **local** state,
+> and its `terraform.tfstate` lives inside that cache. It's the new backend's
+> only state. Copy it to `bootstrap-new-account-<id>.tfstate` at the repo root
+> first (`*.tfstate` is gitignored).
 
 Verify nothing references the old bucket:
 
@@ -151,8 +158,10 @@ grep -rn "$OLD" terragrunt/ --include='*.hcl' | grep -v terragrunt-cache
 ## 5. Point the environment at the new account
 
 Edit `terragrunt/envs/dev/eu-central-1/env.hcl` and replace every occurrence of
-the old account ID (there were 52 in the reference migration — they appear inside
-Secrets Manager ARNs, ECR URIs and IAM role ARNs):
+the old account ID. There were 52 the first time, inside Secrets Manager ARNs,
+ECR URIs and IAM role ARNs. Since the ARNs are resolved by name now, there were
+33 the second time: `account_id`, the 31 ECR image URIs and the Cognito domain
+prefix.
 
 ```bash
 sed -i 's/<old-account-id>/<new-account-id>/g' terragrunt/envs/dev/eu-central-1/env.hcl
