@@ -1,5 +1,5 @@
 locals {
-state_bucket = "binbon-bootstrap-tfstate-20260906083634558300000001"
+state_bucket = "binbon-bootstrap-tfstate-20261004100200286800000001"
  lock_table = "binbon-bootstrap-tf-lock" 
 }
 remote_state {

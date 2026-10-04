@@ -6,7 +6,7 @@ backend="s3"
     path      = "backend.tf"
     if_exists = "overwrite_terragrunt"
   }
-config={bucket="binbon-bootstrap-tfstate-20260906083634558300000001",key = "${local.env.locals.environment}/${local.env.locals.region}/${basename(get_original_terragrunt_dir())}/terraform.tfstate",region="eu-central-1",encrypt=true,dynamodb_table="binbon-bootstrap-tf-lock"
+config={bucket="binbon-bootstrap-tfstate-20261004100200286800000001",key = "${local.env.locals.environment}/${local.env.locals.region}/${basename(get_original_terragrunt_dir())}/terraform.tfstate",region="eu-central-1",encrypt=true,dynamodb_table="binbon-bootstrap-tf-lock"
 }
 }
 locals {
