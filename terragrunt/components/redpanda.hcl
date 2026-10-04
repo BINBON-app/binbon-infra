@@ -6,10 +6,11 @@ backend="s3"
     path      = "backend.tf"
     if_exists = "overwrite_terragrunt"
   }
-config={bucket="binbon-bootstrap-tfstate-20261004100200286800000001",key = "${local.env.locals.environment}/${local.env.locals.region}/${basename(get_original_terragrunt_dir())}/terraform.tfstate",region="eu-central-1",encrypt=true,dynamodb_table="binbon-bootstrap-tf-lock"
+config={bucket=local.backend.locals.state_bucket,key = "${local.env.locals.environment}/${local.env.locals.region}/${basename(get_original_terragrunt_dir())}/terraform.tfstate",region=local.backend.locals.state_region,encrypt=true,dynamodb_table=local.backend.locals.lock_table
 } 
 }
 locals {
+ backend=read_terragrunt_config(find_in_parent_folders("backend.hcl"))
 env=read_terragrunt_config(find_in_parent_folders("env.hcl"))
  tags={Project="binbon",Environment=local.env.locals.environment,ManagedBy="Terraform"
 }
@@ -46,7 +47,10 @@ generate "provider" {
 path="provider.tf"
  if_exists="overwrite_terragrunt"
  contents=<<EOF
-provider "aws" { region = "eu-central-1" }
+provider "aws" {
+  region              = "eu-central-1"
+  allowed_account_ids = ["${local.backend.locals.account_id}"]
+}
 provider "redpanda" {
   client_id     = "${local.redpanda_creds.client_id}"
   client_secret = "${local.redpanda_creds.client_secret}"
@@ -57,5 +61,5 @@ terraform {
 source=dirname(find_in_parent_folders("modules/redpanda/main.tf"))
 }
 inputs={
-name="binbon-${local.env.locals.environment}",region=local.redpanda.region,aws_account_id=local.env.locals.account_id,enable_private_link=local.redpanda.enable_private_link,public_networking=local.redpanda.public_networking,private_networking=local.redpanda.private_networking,allow_cluster_deletion=local.redpanda.allow_cluster_deletion,allow_private_link_deletion=local.redpanda.allow_private_link_deletion,allow_topic_deletion=local.redpanda.allow_topic_deletion,allow_user_deletion=try(local.redpanda.allow_user_deletion,false),allow_acl_deletion=try(local.redpanda.allow_acl_deletion,false),topics=local.redpanda.topics,service_users=local.redpanda.service_users,service_user_passwords=local.service_user_passwords,tags=local.tags
+name="binbon-${local.env.locals.environment}",region=local.redpanda.region,aws_account_id=local.backend.locals.account_id,enable_private_link=local.redpanda.enable_private_link,public_networking=local.redpanda.public_networking,private_networking=local.redpanda.private_networking,allow_cluster_deletion=local.redpanda.allow_cluster_deletion,allow_private_link_deletion=local.redpanda.allow_private_link_deletion,allow_topic_deletion=local.redpanda.allow_topic_deletion,allow_user_deletion=try(local.redpanda.allow_user_deletion,false),allow_acl_deletion=try(local.redpanda.allow_acl_deletion,false),topics=local.redpanda.topics,service_users=local.redpanda.service_users,service_user_passwords=local.service_user_passwords,tags=local.tags
 }

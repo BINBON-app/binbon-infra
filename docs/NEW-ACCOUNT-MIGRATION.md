@@ -120,25 +120,38 @@ Note the `state_bucket` and `lock_table` outputs.
 
 ---
 
-## 4. Repoint every reference to the new state bucket
+## 4. Point `backend.hcl` at the new account
 
-The bucket name is **hardcoded in 18 files** (`root.hcl`, the 16 component
-files, and `github-oidc/terragrunt.hcl`) so each component's `remote_state`
-resolves without an `include`. Rewrite them all at once:
+The account and its state backend live in **one file**,
+`terragrunt/backend.hcl`. Every component and `github-oidc` read it with
+`find_in_parent_folders("backend.hcl")`:
 
-```bash
-OLD="<old-bucket-name>"
-NEW="<state_bucket output from step 3>"
-grep -rl "$OLD" terragrunt/root.hcl terragrunt/components/ terragrunt/github-oidc/ \
-  | xargs sed -i "s/$OLD/$NEW/g"
+```hcl
+locals {
+  account_id   = "<new account id>"
+  state_bucket = "<state_bucket output from step 3>"
+  lock_table   = "binbon-bootstrap-tf-lock"
+  state_region = "eu-central-1"
+}
 ```
+
+`account_id` does three jobs:
+
+- it builds the ECR image URIs: `env.hcl` holds only `binbon-<env>:<service>-replace`,
+  and `services.hcl` adds the registry;
+- it sets Redpanda's PrivateLink principal;
+- it sets `allowed_account_ids` on every generated AWS provider. A shell
+  pointed at the **wrong** account then fails at plan time instead of
+  building there.
+
+The first two migrations had to rewrite the bucket name in 18 files and the
+account ID in `env.hcl` 33 times, by `sed`. That's gone.
 
 Then **clear the Terragrunt caches**, or the old backend config is reused and you
 get confusing "bucket does not exist" failures:
 
 ```bash
-find terragrunt -type d -name '.terragrunt-cache' -prune \
-  -not -path 'terragrunt/bootstrap/*' -exec rm -rf {} +
+find terragrunt -type d -name '.terragrunt-cache' -prune   -not -path 'terragrunt/bootstrap/*' -exec rm -rf {} +
 ```
 
 > [!CAUTION]
@@ -147,31 +160,26 @@ find terragrunt -type d -name '.terragrunt-cache' -prune \
 > only state. Copy it to `bootstrap-new-account-<id>.tfstate` at the repo root
 > first (`*.tfstate` is gitignored).
 
-Verify nothing references the old bucket:
-
-```bash
-grep -rn "$OLD" terragrunt/ --include='*.hcl' | grep -v terragrunt-cache
-```
+An environment that lives in a different account can carry its own
+`terragrunt/envs/<env>/backend.hcl`; the nearest file wins.
 
 ---
 
-## 5. Point the environment at the new account
+## 5. Reset what belongs to the old account in `env.hcl`
 
-Edit `terragrunt/envs/dev/eu-central-1/env.hcl` and replace every occurrence of
-the old account ID. There were 52 the first time, inside Secrets Manager ARNs,
-ECR URIs and IAM role ARNs. Since the ARNs are resolved by name now, there were
-33 the second time: `account_id`, the 31 ECR image URIs and the Cognito domain
-prefix. Cognito has since been removed (it was never used), so the next move
-has 32.
+`env.hcl` no longer holds the account ID. Three things in it still belong to
+the old account. Set them before the first apply:
 
-```bash
-sed -i 's/<old-account-id>/<new-account-id>/g' terragrunt/envs/dev/eu-central-1/env.hcl
-```
+| setting | set it to | why |
+|---|---|---|
+| `alb_certificate_arn`, `alb_additional_certificate_arns` | `null` and `[]` | Certificates exist in one account only. With the old ARNs, the `alb` apply **fails**. Step 14 sets the new ones. |
+| `media_cloudfront_enabled` (TEMPORARY) | `true` if the account can create CloudFront resources, else `false` | see *New-account limits* |
+| service `cpu` (TEMPORARY) | `512` if the Fargate quota allows it, else `256` | see *New-account limits* |
 
-Keep a `.bak` first. Confirm the count afterwards:
+Then confirm nothing in the tree still names the old account:
 
 ```bash
-grep -c '<new-account-id>' terragrunt/envs/dev/eu-central-1/env.hcl
+grep -rn '<old-account-id>' terragrunt/ --include='*.hcl' | grep -v terragrunt-cache
 ```
 
 ---
@@ -580,7 +588,7 @@ The ALB's DNS name changes with every account.
 ### 14b. Hand the certificates to Terraform
 
 Once every certificate is `ISSUED`, `request-certs.sh` prints the two lines for
-`env.hcl`:
+`env.hcl` (null until now, see step 5):
 
 ```hcl
 alb_certificate_arn             = "<api.dev.binbon.ch arn>"

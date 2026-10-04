@@ -1,6 +1,7 @@
 locals {
-state_bucket = "binbon-bootstrap-tfstate-20261004100200286800000001"
- lock_table = "binbon-bootstrap-tf-lock" 
+ backend = read_terragrunt_config(find_in_parent_folders("backend.hcl"))
+ state_bucket = local.backend.locals.state_bucket
+ lock_table = local.backend.locals.lock_table
 }
 remote_state {
 backend = "s3"

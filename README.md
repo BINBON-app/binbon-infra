@@ -55,7 +55,7 @@
 
 ### 1) Prepare the target environment
 
-Copy the sample environment file and set your AWS account ID, image URIs, domains, certificate ARNs and Secrets Manager ARNs.
+Copy the sample environment file and set the environment's settings. The AWS account is not in it: that is `terragrunt/backend.hcl` (step 2). Leave the certificate ARNs `null` until the certificates exist.
 
 ```powershell
 cd terragrunt/envs/dev/eu-central-1
@@ -70,13 +70,18 @@ terragrunt init
 terragrunt apply
 ```
 
-`root.hcl` and every file under `terragrunt/components/` hardcode the state bucket name directly (not a placeholder token) so every component's `remote_state` block resolves without needing an `include`. After bootstrapping, replace the existing bucket name in all of them with the one `terragrunt apply` just printed as the `state_bucket` output:
+Put the outputs, and the account ID, in **`terragrunt/backend.hcl`**. It's the only file that names the account and its state backend; every component and `github-oidc` read it:
 
-```bash
-OLD="<bucket-name-currently-in-the-files>"
-NEW="<state_bucket-output-from-this-apply>"
-grep -rl "$OLD" ../root.hcl ../components/ ../github-oidc/terragrunt.hcl | xargs sed -i "s/$OLD/$NEW/g"
+```hcl
+locals {
+  account_id   = "<aws account id>"
+  state_bucket = "<state_bucket output>"
+  lock_table   = "<lock_table output>"
+  state_region = "eu-central-1"
+}
 ```
+
+`account_id` also builds the ECR image URIs and puts `allowed_account_ids` on every AWS provider, so a shell pointed at the wrong account fails at plan time.
 
 You only need this the first time you bootstrap an environment, or if you ever re-bootstrap after a full teardown (see [Troubleshooting](#-troubleshooting) below).
 
@@ -295,7 +300,7 @@ terragrunt apply
 
 The same pattern (`terragrunt import <resource address> <real ID>`) applies to any other orphaned resource a fresh apply collides with — check the error message for the resource address and the AWS console/CLI for its current ID.
 
-**`Failed to get existing workspaces: S3 bucket ... does not exist`.** The state bucket name hardcoded in `root.hcl`/`terragrunt/components/*.hcl` doesn't match a bucket that actually exists — either bootstrap hasn't been run yet, or a previous bucket was deleted (e.g. during a full environment teardown) and the new one was never copied in. Re-run `terragrunt apply` in `terragrunt/bootstrap`, then follow the bucket-name replacement step in [Quick start](#-quick-start).
+**`Failed to get existing workspaces: S3 bucket ... does not exist`.** The `state_bucket` in `terragrunt/backend.hcl` doesn't match a bucket that actually exists — either bootstrap hasn't been run yet, or a previous bucket was deleted (e.g. during a full environment teardown) and the new one was never copied in. Re-run `terragrunt apply` in `terragrunt/bootstrap`, then put its `state_bucket` output in `terragrunt/backend.hcl` and clear the `.terragrunt-cache` directories (except `terragrunt/bootstrap`'s, which holds bootstrap's local state).
 
 ---
 
@@ -303,7 +308,7 @@ The same pattern (`terragrunt import <resource address> <real ID>`) applies to a
 
 - [ ] Use a dedicated CI role per environment and account.
 - [ ] Enable deletion protection, backups, and final snapshots before the first production apply.
-- [ ] Replace example account IDs, image tags, certificate ARNs, domains and secret ARNs.
+- [ ] Set `terragrunt/backend.hcl` (or an environment's own `envs/<env>/backend.hcl`) to the production account, and replace example certificate ARNs, domains and secret ARNs.
 - [ ] Restrict ECS egress further or add VPC endpoints if your compliance controls require it.
 - [ ] Review Keyspaces schemas and database migrations through your application delivery process.
 - [ ] Confirm the resolved `ClickHouse/clickhouse` provider version in `.terraform.lock.hcl` matches what you validated; the module pins a loose `>= 1.0.0` constraint.

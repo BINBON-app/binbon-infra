@@ -13,7 +13,8 @@
 #   scripts/tg.sh github-oidc output
 set -euo pipefail
 
-REPO=/mnt/d/claude/binbon-aws-terraform-complete
+# The repo is this script's parent directory, wherever it is checked out.
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ROOT="$REPO/terragrunt"
 DEFAULT_UNIT="$ROOT/envs/dev/eu-central-1"
 export AWS_PROFILE="${AWS_PROFILE:-default}"
