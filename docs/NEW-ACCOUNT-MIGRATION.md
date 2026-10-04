@@ -361,9 +361,20 @@ In **this** repo, set `vars.AWS_TERRAFORM_APPLY_ROLE_ARN` to
 Branch routing in the deployed workflow is `dev → dev`, `staging → staging`,
 `master → prod`.
 
-Then push to `dev` (or run the workflow manually) to build and push real images.
-Until this happens every task definition points at the non-existent
-`binbon-dev:<service>-replace` placeholder.
+Then build and deploy real images. Until this happens every task definition
+points at the non-existent `binbon-dev:<service>-replace` placeholder.
+
+**A push is not enough for the first deploy.** On a push the workflow deploys
+only the services whose directories changed. Every other service stays on the
+placeholder. Dispatch it once for the whole fleet instead:
+
+```bash
+gh workflow run build-and-deploy.yml --ref dev -f environment=dev -f service=all
+```
+
+The fleet deploys in parallel. That's fine the first time, when nothing is
+running yet, but at a low Fargate quota (see *New-account limits*), later
+redeploys have to go one service at a time.
 
 ---
 
@@ -526,10 +537,17 @@ the infrastructure exists.
 ### 14a. Request the certificates
 
 ```bash
-./scripts/request-certs.sh
+./scripts/request-certs.sh                                    # prompts
+./scripts/request-certs.sh --domain '*.binbon.ch' --domain api.dev.binbon.ch
 ```
 
-It asks how many certificates you want and for each exact domain, then prints
+Dev serves those two names: `api.dev.binbon.ch` as the default certificate and
+`*.binbon.ch` over SNI. Certificates belong to one account, so a new account
+requests them again, with **new** validation CNAMEs. Delete the old account's
+records.
+
+Without `--domain`, it asks how many certificates you want and for each exact
+domain. Either way it prints
 per certificate: **domain, status, ARN, CNAME name, CNAME value**. Add those
 CNAMEs at your DNS provider; ACM validates within minutes of them resolving.
 Re-run (or use `--wait`) until every certificate is `ISSUED` — the script exits
@@ -545,6 +563,10 @@ non-zero while any are pending, so it is safe to chain.
 > [!NOTE]
 > Keep the validation CNAMEs in DNS permanently. ACM re-checks them at renewal,
 > so deleting them after issuance breaks auto-renewal about 13 months later.
+
+Also point each served host at the **new** ALB, for example a `CNAME`
+`api.dev.binbon.ch` → `binbon-dev-alb-<id>.eu-central-1.elb.amazonaws.com`.
+The ALB's DNS name changes with every account.
 
 ### 14b. Configure the ALB
 
@@ -999,6 +1021,19 @@ then type the fixed one.
 
 ## Post-migration notes
 
+- **The deploy signs in through OIDC.** The backend's deploy assumes
+  `binbon-github-ecs-deploy` for two hours, so no AWS keys are stored in
+  GitHub (step 10). The role has to allow every call the workflow makes. It
+  lacked `ecr:DescribeImages` until the switch, which would have failed every
+  deploy at "verify image". A new `aws` call in the workflow needs a matching
+  permission in `modules/github-oidc`.
+- **ClickHouse needs no migration run on a fresh account.** analytics-service
+  creates its database and its `events` table at startup
+  (`ANALYTICS_ENSURE_SCHEMA`, on by default). The tables in
+  `migrations/clickhouse/0001_analytics.sql` aren't used by any service. With
+  `idle_scaling` on, its first start can time out while ClickHouse wakes up
+  (`Database binbon_analytics does not exist`). ECS restarts the task, and
+  the second start goes through.
 - **Dev-only switches.** Dev's `env.hcl` turns on two things the other
   environments must decide on separately. The first is `OTP_FIXED_CODE` on
   auth (step 20). The second is `MEDIA_PRIVATE_ACCESS_ENABLED` on media: with
