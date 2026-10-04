@@ -4,8 +4,9 @@ output "bucket_name" {
 output "bucket_arn" {
   value = aws_s3_bucket.media.arn
 }
+# Empty, not null, when CloudFront is off, so consumers can test it as a string.
 output "cloudfront_domain_name" {
-  value = aws_cloudfront_distribution.media.domain_name
+  value = var.enable_cloudfront ? aws_cloudfront_distribution.media[0].domain_name : ""
 }
 output "mediaconvert_role_arn" {
   value = aws_iam_role.mediaconvert.arn

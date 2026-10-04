@@ -55,7 +55,8 @@ locals {
     S3_REGION        = var.s3_region
     S3_ACCESS_KEY    = var.s3_access_key_id
     S3_SECRET_KEY    = var.s3_secret_access_key
-    CDN_BASE_URL     = "https://${var.cdn_domain_name}"
+    # Empty when media has no CloudFront; services then use presigned S3 URLs.
+    CDN_BASE_URL     = var.cdn_domain_name == "" ? "" : "https://${var.cdn_domain_name}"
   })
 }
 

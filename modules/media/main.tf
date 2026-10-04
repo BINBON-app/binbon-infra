@@ -32,6 +32,7 @@ resource "aws_cloudfront_origin_access_control" "media" {
   signing_protocol                  = "sigv4"
 }
 resource "aws_cloudfront_distribution" "media" {
+  count           = var.enable_cloudfront ? 1 : 0
   enabled         = true
   is_ipv6_enabled = true
   web_acl_id      = var.waf_web_acl_arn
@@ -67,13 +68,23 @@ resource "aws_cloudfront_distribution" "media" {
   tags = var.tags
 }
 resource "aws_s3_bucket_policy" "media" {
+  count  = var.enable_cloudfront ? 1 : 0
   bucket = aws_s3_bucket.media.id
   policy = jsonencode({ Version = "2012-10-17", Statement = [{ Effect = "Allow", Principal = { Service = "cloudfront.amazonaws.com"
-    }, Action = "s3:GetObject", Resource = "${aws_s3_bucket.media.arn}/*", Condition = { StringEquals = { "AWS:SourceArn" = aws_cloudfront_distribution.media.arn
+    }, Action = "s3:GetObject", Resource = "${aws_s3_bucket.media.arn}/*", Condition = { StringEquals = { "AWS:SourceArn" = aws_cloudfront_distribution.media[0].arn
     }
     }
     }]
   })
+}
+# Both became counted with enable_cloudfront; keeps existing state in place.
+moved {
+  from = aws_cloudfront_distribution.media
+  to   = aws_cloudfront_distribution.media[0]
+}
+moved {
+  from = aws_s3_bucket_policy.media
+  to   = aws_s3_bucket_policy.media[0]
 }
 resource "aws_iam_role" "mediaconvert" {
   name = "${var.name}-mediaconvert"
