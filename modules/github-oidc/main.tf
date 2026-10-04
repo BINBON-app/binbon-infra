@@ -50,6 +50,9 @@ data "aws_iam_policy_document" "ecs_deploy_trust" {
 resource "aws_iam_role" "ecs_deploy" {
   name               = "${var.name}-github-ecs-deploy"
   assume_role_policy = data.aws_iam_policy_document.ecs_deploy_trust.json
+  # The deploy workflow asks for two hours: a build, the provision task and
+  # the wait for a stable service can outlast the one-hour default.
+  max_session_duration = 7200
   tags               = var.tags
 }
 
@@ -73,6 +76,7 @@ resource "aws_iam_role_policy" "ecs_deploy" {
           "ecr:BatchCheckLayerAvailability",
           "ecr:GetDownloadUrlForLayer",
           "ecr:BatchGetImage",
+          "ecr:DescribeImages",
           "ecr:PutImage",
           "ecr:InitiateLayerUpload",
           "ecr:UploadLayerPart",
@@ -130,6 +134,15 @@ resource "aws_iam_role_policy" "ecs_deploy" {
         Effect   = "Allow"
         Action   = "secretsmanager:DescribeSecret"
         Resource = "arn:${data.aws_partition.current.partition}:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:${var.name}-*-keyspaces-provisioner-*"
+      },
+      {
+        # Read-only lookups the deploy prints when a step fails: which task
+        # definition families exist, and which tasks of a rolled-back service
+        # stopped. The List* calls don't support resource-level scoping.
+        Sid      = "DiagnoseDeploy"
+        Effect   = "Allow"
+        Action   = ["ecs:ListTaskDefinitions", "ecs:ListTaskDefinitionFamilies", "ecs:ListTasks"]
+        Resource = "*"
       }
     ]
   })

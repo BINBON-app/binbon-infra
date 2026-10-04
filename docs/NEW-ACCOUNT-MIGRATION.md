@@ -280,8 +280,16 @@ In the **backend** repo's GitHub settings:
 | `vars.ECR_REPOSITORY` | `binbon-dev` |
 | `vars.ECS_CLUSTER_PREFIX` | `binbon` |
 | `vars.AWS_REGION` | `eu-central-1` |
-| `secrets.AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | new account's keys |
-| `vars.AWS_ECS_DEPLOY_ROLE_ARN` | from step 9 — only if switching to OIDC |
+| `vars.AWS_ECS_DEPLOY_ROLE_ARN` | `ecs_deploy_role_arn` from step 9 |
+
+The deploy signs in through GitHub OIDC: it assumes `binbon-github-ecs-deploy`
+for two hours, and no AWS keys are stored in GitHub. Delete any leftover
+`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` repository secrets — nothing reads
+them, and keys for a new account are often its root keys, which must never be
+stored there.
+
+In **this** repo, set `vars.AWS_TERRAFORM_APPLY_ROLE_ARN` to
+`terraform_apply_role_arn` from step 9 (see step 16).
 
 Branch routing in the deployed workflow is `dev → dev`, `staging → staging`,
 `master → prod`.
