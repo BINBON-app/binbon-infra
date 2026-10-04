@@ -41,7 +41,7 @@
 | :-- | :-- |
 | Terraform `>= 1.6` + Terragrunt `>= 0.66` | Provision and orchestrate the stack |
 | AWS credentials / CI role | Access the target AWS account |
-| ACM certificate in `eu-central-1` | ALB HTTPS listener |
+| ACM certificate in `eu-central-1` | ALB HTTPS listener. One wildcard per environment, e.g. `*.dev.binbon.ch`, requested with `scripts/request-certs.sh` |
 | ACM certificate in `us-east-1` | Only for a custom domain on the media CloudFront |
 | Redpanda Cloud service account | Needed only for the Redpanda stack |
 | ClickHouse Cloud organization + API key | Needed only for the ClickHouse stack |

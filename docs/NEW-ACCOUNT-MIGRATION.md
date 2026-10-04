@@ -583,9 +583,12 @@ non-zero while any are pending, so it is safe to chain.
 > Keep the validation CNAMEs in DNS permanently. ACM re-checks them at renewal,
 > so deleting them after issuance breaks auto-renewal about 13 months later.
 
-Also point each served host at the **new** ALB, for example a `CNAME`
-`api.dev.binbon.ch` → `binbon-dev-alb-<id>.eu-central-1.elb.amazonaws.com`.
-The ALB's DNS name changes with every account.
+Also point each served host at the **new** ALB. Dev has two `CNAME`s,
+`api-gateway.dev.binbon.ch` and `api.dev.binbon.ch`, both →
+`binbon-dev-alb-<id>.eu-central-1.elb.amazonaws.com`. The ALB's DNS name
+changes with every account, so update or delete every record that still names
+the old one, along with the old account's validation CNAMEs. Those are the
+`…acm-validations.aws` values that match no certificate in the new account.
 
 ### 14b. Hand the certificates to Terraform
 
@@ -642,6 +645,26 @@ mostly POST-only, so a `404` or `405` from a browser is normal and is not an ALB
 fault. Tell the layers apart by the response body: the gateway returns its own
 JSON envelope (`{"error":{"code":"NOT_FOUND",...}}`), an upstream service
 returns an empty-bodied 404, and a genuine ALB failure is a raw 502/503.
+
+### Giving developers access
+
+| | |
+|---|---|
+| Base URL | `https://api-gateway.dev.binbon.ch` (routes under `/api/v1/...`) |
+| Postman | `qa/binbon.postman_collection.json` in the backend repo, with `base_url`, `media_url`, `comment_url`, `story_url` and `presence_url` set to the base URL. The gateway routes those public paths. |
+| Login | OTP, with dev's fixed code (step 20). Share it privately. |
+
+What they can't reach from outside, by design or not yet:
+
+- `/internal/...` endpoints, which are service-to-service only;
+- chat's and live's WebSockets: the gateway doesn't proxy them, and only
+  api-gateway sits behind the ALB;
+- CloudFront media links, until the account is verified (presigned S3 links
+  are used meanwhile).
+
+The WAF in front (see *Post-migration notes*) returns 403 to requests without
+a `User-Agent`, and past 2000 requests per IP per 5 minutes. A whole team
+running the full collection from one office IP can hit that.
 
 ---
 

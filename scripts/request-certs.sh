@@ -11,16 +11,27 @@
 # records added at an external registrar (there is no Route 53 zone), so an
 # apply would block indefinitely waiting for a human.
 #
+# One wildcard per environment is usually all an ALB needs. Dev uses
+# *.dev.binbon.ch, which covers api.dev.binbon.ch and api-gateway.dev.binbon.ch.
 # A wildcard matches exactly ONE label, which is the usual surprise here:
 #   *.example.com        covers  dev.example.com
 #   *.example.com        does NOT cover  api.dev.example.com
 #   *.dev.example.com    covers  api.dev.example.com
-# Request whichever names you actually serve; the ALB presents several via SNI.
+# Add a second certificate only for a host the first doesn't cover; the ALB
+# serves the extras by SNI.
+#
+# The printed env.hcl lines make the first wildcard (or else the first host)
+# the default and list only the OTHERS as additional. Never list the default
+# there too: AWS won't remove a listener's default certificate as an extra one,
+# so a later change would need a `terragrunt state rm` to untangle.
+#
+# Keep each validation CNAME in DNS for good: ACM re-checks it at renewal.
 #
 # Usage:
-#   ./scripts/request-certs.sh                     # prompts for count + domains
-#   ./scripts/request-certs.sh --domain a --domain b   # skip the prompts
-#   ./scripts/request-certs.sh --wait              # poll until each is ISSUED
+#   ./scripts/request-certs.sh --domain '*.dev.binbon.ch'   # the usual case
+#   ./scripts/request-certs.sh --domain a --domain b        # several
+#   ./scripts/request-certs.sh                              # prompts instead
+#   ./scripts/request-certs.sh --wait ...                   # poll until ISSUED
 set -uo pipefail
 
 REGION="${AWS_REGION:-eu-central-1}"
@@ -32,7 +43,7 @@ while [ $# -gt 0 ]; do
     --domain) DOMAINS+=("${2:?--domain needs a value}"); shift 2 ;;
     --region) REGION="${2:?--region needs a value}"; shift 2 ;;
     --wait)   WAIT=1; shift ;;
-    -h|--help) sed -n '2,23p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,/^set -uo/{/^set -uo/d;s/^# \{0,1\}//;p}' "$0"; exit 0 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
@@ -47,9 +58,10 @@ if [ "${#DOMAINS[@]}" -eq 0 ]; then
   [ "$COUNT" -ge 1 ] || { echo "ERROR: enter a number of 1 or more." >&2; exit 2; }
 
   echo
-  echo "Enter each domain exactly as clients will request it."
-  echo "Examples:  api.dev.example.com      a single host"
-  echo "           *.dev.example.com        every host one level under dev"
+  echo "Enter each domain exactly as clients will request it. One wildcard per"
+  echo "environment is usually enough."
+  echo "Examples:  *.dev.example.com        every host one level under dev"
+  echo "           api.dev.example.com      a single host"
   echo
   i=1
   while [ "$i" -le "$COUNT" ]; do
@@ -162,24 +174,35 @@ if [ "$PENDING" -eq 1 ]; then
   exit 1
 fi
 
-# The host certificate is the ALB's default (it is the name clients request);
-# any wildcard is served alongside it over SNI.
-DEFAULT_ARN=""; SNI_ARN=""
+# Default: the first wildcard, since it covers the most hosts; else the first
+# host. Additional: every OTHER certificate, never the default again (see the
+# header), and no ARN twice.
+DEFAULT_ARN=""
 for i in "${!R_DOMAIN[@]}"; do
-  case "${R_DOMAIN[$i]}" in
-    \*.*) [ -z "$SNI_ARN" ] && SNI_ARN="${R_ARN[$i]}" ;;
-    *)    [ -z "$DEFAULT_ARN" ] && DEFAULT_ARN="${R_ARN[$i]}" ;;
-  esac
+  case "${R_DOMAIN[$i]}" in \*.*) DEFAULT_ARN="${R_ARN[$i]}"; break ;; esac
 done
 [ -n "$DEFAULT_ARN" ] || DEFAULT_ARN="${R_ARN[0]}"
+
+EXTRA=""
+for i in "${!R_ARN[@]}"; do
+  a="${R_ARN[$i]}"
+  [ "$a" = "$DEFAULT_ARN" ] && continue
+  case " $EXTRA " in *" \"$a\" "*) continue ;; esac
+  EXTRA="${EXTRA:+$EXTRA, }\"$a\""
+done
 
 echo
 echo "All certificates ISSUED. Next step: set these in env.hcl"
 echo
 echo "  alb_certificate_arn             = \"$DEFAULT_ARN\""
-echo "  alb_additional_certificate_arns = [${SNI_ARN:+\"$SNI_ARN\"}]"
+echo "  alb_additional_certificate_arns = [$EXTRA]"
 echo
-echo "then apply alb (HTTPS listener, :80 redirect) and services (the /api/* rule"
-echo "moves to :443):"
+echo "then apply alb. It builds :443, makes :80 redirect, and swaps or adds"
+echo "certificates in place:"
 echo
-echo "  ./scripts/tg.sh alb apply && ./scripts/tg.sh services apply"
+echo "  ./scripts/tg.sh alb apply"
+echo
+echo "The first time HTTPS is turned on, also apply services: api-gateway's"
+echo "/api/* and /health rule moves to :443 with it."
+echo
+echo "  ./scripts/tg.sh services apply"
