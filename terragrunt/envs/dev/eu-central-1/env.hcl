@@ -4,7 +4,10 @@ locals {
   account_id                 = "922640336342"
   domain_name                = null
   route53_zone_id            = null
-  alb_certificate_arn        = null
+  # api.dev.binbon.ch as the default certificate, *.binbon.ch over SNI. Both
+  # requested with scripts/request-certs.sh and DNS-validated at the registrar.
+  alb_certificate_arn             = "arn:aws:acm:eu-central-1:922640336342:certificate/d0f44208-5f88-4c93-bf87-171296a680a6"
+  alb_additional_certificate_arns = ["arn:aws:acm:eu-central-1:922640336342:certificate/1bfd78f6-4c25-44cd-b2dd-732cffdb727e"]
   cloudfront_certificate_arn = null
   # TEMPORARY: account 922640336342 can't create CloudFront resources until AWS
   # verifies it, so media runs without its distribution and services get an
@@ -30,7 +33,7 @@ locals {
   # leaves room for one service's deployment at a time. Put it back to 512 once
   # the quota is raised.
   services = {
-    api-gateway = { image = "922640336342.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:api-gateway-replace", container_port = 8080, cpu = 256, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = ["/api/*"], environment = { APP_ENV = "dev"
+    api-gateway = { image = "922640336342.dkr.ecr.eu-central-1.amazonaws.com/binbon-dev:api-gateway-replace", container_port = 8080, cpu = 256, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = ["/api/*", "/health"], environment = { APP_ENV = "dev"
       }, secret_arns = {
       }, redpanda_user = "api-gateway", task_policy_json = null
     }
@@ -154,27 +157,6 @@ locals {
       }, secret_arns = {
       }, redpanda_user = "wallet-service", task_policy_json = null
     }
-  }
-  cognito = {
-    hosted_domain_prefix          = "binbon-dev-922640336342"
-    custom_domain                 = null
-    custom_domain_certificate_arn = null
-    callback_urls                 = ["http://localhost:3000/callback"]
-    logout_urls                   = ["http://localhost:3000/"]
-    mfa_configuration             = "OPTIONAL"
-    allow_self_signup             = true
-    generate_client_secret        = false
-    create_identity_pool          = false
-    groups = { users = { description = "Default users", precedence = 100
-      }, moderators = { description = "Moderators", precedence = 50
-      }, admins = { description = "Administrators", precedence = 1
-      }
-    }
-    api_scopes = { read = "Read application data", write = "Write application data"
-    }
-    lambda_triggers = {
-    }
-
   }
   # OpenVPN Access Server - standing operator access into the VPC (Aurora,
   # Redis, OpenSearch, etc.) via a real VPN instead of ad-hoc SSM tunnels.

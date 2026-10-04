@@ -17,7 +17,8 @@ name: Terraform Apply
 #      Marketplace terms.
 #   3. scripts/request-certs.sh — ACM DNS validation needs records added at an
 #      external registrar, so an apply would block forever waiting for a human.
-#   4. scripts/configure-alb.sh — depends on (3).
+#      Once they're ISSUED, their ARNs go in env.hcl and this workflow applies
+#      the HTTPS listener like anything else.
 #
 # Everything else, including the per-service databases, is applied here.
 

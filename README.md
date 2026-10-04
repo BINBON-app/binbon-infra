@@ -24,7 +24,7 @@
 | 🟩 **Compute** | ALB, ECS Fargate, ECR, IAM, CloudWatch | Containerised microservices with autoscaling |
 | 🟪 **Data** | Aurora Serverless v2, ElastiCache Serverless, Keyspaces, OpenSearch, ClickHouse Cloud | PostgreSQL, Redis, wide-column, search and OLAP analytics |
 | 🟨 **Edge & media** | Route 53, CloudFront, WAF (managed rule groups + rate limiting), S3, MediaConvert | Secure global delivery, bot/abuse filtering and media handling |
-| 🟥 **Identity** | Amazon Cognito, regional WAF | Hosted UI, OAuth/OIDC, MFA, groups, JWTs and pool-level abuse filtering |
+| 🟥 **Identity** | none in AWS | Login lives in the backend: auth-service issues OTPs and signs its own JWTs with `JWT_SECRET` |
 | 🟧 **Events** | Redpanda Serverless + AWS PrivateLink | Kafka-compatible event streaming |
 | ⚙️ **Operations** | KMS, Secrets Manager hooks, remote state bootstrap | Encryption, logs and state management |
 
@@ -110,7 +110,7 @@ network
   │                │        ├── edge ── waf-cloudfront
   │                │        └── opensearch
   │                └── media ── waf-cloudfront
-  ├── cognito ── waf-regional
+  ├── waf-regional
   ├── clickhouse
   └── redpanda ── redpanda-endpoint
                        │
@@ -130,7 +130,6 @@ network
 | `edge` | Application CloudFront and optional DNS | `alb`, `waf-cloudfront` |
 | `waf-cloudfront` | CloudFront-scope WAF Web ACL (`us-east-1`) | — |
 | `waf-regional` | Regional-scope WAF Web ACL (`eu-central-1`) | — |
-| `cognito` | User Pool, OAuth client, groups, MFA | `waf-regional` |
 | `redpanda` | Serverless cluster, topics, users and ACLs | — |
 | `redpanda-endpoint` | AWS PrivateLink endpoint and private DNS | `network`, `alb`, `redpanda` |
 | `services` | ECS tasks and autoscaling | Platform dependencies above |
@@ -229,29 +228,12 @@ aws ecs wait services-stable --cluster binbon-dev --services api-gateway
 
 ---
 
-## 🔐 Cognito configuration
-
-The Cognito stack creates:
-
-- Email-based user pool, verification and account recovery
-- 12-character password policy and configurable MFA
-- Hosted UI domain, authorization-code OAuth/OIDC client and API scopes
-- `users`, `moderators`, and `admins` group examples
-- Optional identity pool, WAF association, and Lambda trigger hooks
-
-The User Pool ID, client ID and OIDC issuer URL are injected into every ECS service. Keep `generate_client_secret = false` for browser/mobile public clients. Create a separate confidential client and store its secret in Secrets Manager for server-to-server use.
-
-> [!WARNING]
-> A custom Cognito domain needs a **`us-east-1` ACM certificate** and a DNS record. A Cognito hosted-domain prefix must be globally unique—replace the example account ID before applying.
-
----
-
 ## 🛡️ WAF configuration
 
 Two separate Web ACLs exist because AWS WAF scopes are not interchangeable:
 
 - `waf-cloudfront` — scope `CLOUDFRONT`, must be created in `us-east-1` regardless of where the rest of the platform runs. Attached to both the application and media CloudFront distributions.
-- `waf-regional` — scope `REGIONAL`, created in `eu-central-1`. Attached to the Cognito User Pool.
+- `waf-regional` — scope `REGIONAL`, created in `eu-central-1`. Attached to nothing at present: it protected the Cognito User Pool, which was removed as unused. The ALB is the natural place for it; its common rule set's 8 KB `SizeRestrictions_BODY` would first need to count rather than block, because multipart uploads pass through api-gateway.
 
 Both ship with a per-IP rate-based rule (`rate_limit`, default 2000 requests/5 minutes) plus the AWS managed rule groups `AWSManagedRulesCommonRuleSet`, `AWSManagedRulesKnownBadInputsRuleSet`, and `AWSManagedRulesAmazonIpReputationList`. Adjust `rate_limit` per environment in `terragrunt/components/waf-cloudfront.hcl` / `waf-regional.hcl` if traffic patterns require it.
 
@@ -341,7 +323,6 @@ modules/                         # Reusable Terraform modules
   opensearch/                    # VPC-attached OpenSearch domain
   clickhouse/                    # ClickHouse Cloud service
   waf/                           # CloudFront/Regional WAF Web ACLs
-  cognito/                       # Authentication and authorization
   redpanda/                      # Serverless Kafka-compatible event bus
   redpanda-vpc-endpoint/         # AWS PrivateLink and private DNS
   github-oidc/                   # GitHub Actions OIDC provider + CI IAM roles

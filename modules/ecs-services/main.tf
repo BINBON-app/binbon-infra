@@ -179,6 +179,10 @@ resource "aws_lb_target_group" "this" {
   target_type = "ip"
   vpc_id      = var.vpc_id
 
+  # The default 300s holds every rollout up to five minutes while the old task
+  # drains. API requests finish in seconds, so 30s is plenty.
+  deregistration_delay = 30
+
   health_check {
     path    = each.value.health_check_path
     matcher = "200-399"

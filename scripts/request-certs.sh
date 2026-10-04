@@ -2,8 +2,10 @@
 # Request ACM certificates interactively and print, for each one, the ARN and
 # the CNAME record that must be added at your DNS provider to validate it.
 #
-# Run this AFTER `terragrunt run --all apply` and BEFORE scripts/configure-alb.sh,
-# which takes the ARNs printed here as input.
+# Run this AFTER `terragrunt run --all apply`. Once every certificate is ISSUED,
+# put the ARNs it prints into env.hcl (alb_certificate_arn and
+# alb_additional_certificate_arns) and apply alb, then services: Terraform owns
+# the HTTPS listener from there.
 #
 # Certificates are deliberately NOT managed by Terraform: DNS validation needs
 # records added at an external registrar (there is no Route 53 zone), so an
@@ -156,7 +158,7 @@ if [ "$PENDING" -eq 1 ]; then
   echo
   echo "Add the CNAME records above at your DNS provider. ACM validates within"
   echo "minutes of the record resolving. Re-run this script (or use --wait) to"
-  echo "check, then run configure-alb.sh once every certificate is ISSUED."
+  echo "check; once every certificate is ISSUED it prints the env.hcl lines."
   exit 1
 fi
 
@@ -172,8 +174,12 @@ done
 [ -n "$DEFAULT_ARN" ] || DEFAULT_ARN="${R_ARN[0]}"
 
 echo
-echo "All certificates ISSUED. Next step:"
+echo "All certificates ISSUED. Next step: set these in env.hcl"
 echo
-echo "  ./scripts/configure-alb.sh \\"
-echo "      --default-cert $DEFAULT_ARN${SNI_ARN:+ \\}"
-[ -n "$SNI_ARN" ] && echo "      --sni-cert     $SNI_ARN"
+echo "  alb_certificate_arn             = \"$DEFAULT_ARN\""
+echo "  alb_additional_certificate_arns = [${SNI_ARN:+\"$SNI_ARN\"}]"
+echo
+echo "then apply alb (HTTPS listener, :80 redirect) and services (the /api/* rule"
+echo "moves to :443):"
+echo
+echo "  ./scripts/tg.sh alb apply && ./scripts/tg.sh services apply"

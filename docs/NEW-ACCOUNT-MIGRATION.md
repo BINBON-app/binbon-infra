@@ -20,7 +20,7 @@ has caused a full-fleet outage when forgotten:
 
 | Gap | Symptom if skipped | Fixed by |
 |---|---|---|
-| ACM certificates + HTTPS listener | No `:443` at all; `:80` returns a 503 fixed-response | `request-certs.sh` → `configure-alb.sh` (step 14) |
+| ACM certificates | No `:443` at all; `:80` returns a 503 fixed-response | `request-certs.sh`, then the ARNs in `env.hcl` (step 14) |
 | OpenSearch service-linked role | `CreateDomain` fails: *must enable a service-linked role* | Re-run the apply (see step 7) |
 | OpenVPN Marketplace subscription | VPN instance fails to launch | Accept in the Marketplace console |
 | GitHub repo variables/secrets | CI pushes images to the *old* account | Set them by hand (step 10) |
@@ -161,7 +161,8 @@ Edit `terragrunt/envs/dev/eu-central-1/env.hcl` and replace every occurrence of
 the old account ID. There were 52 the first time, inside Secrets Manager ARNs,
 ECR URIs and IAM role ARNs. Since the ARNs are resolved by name now, there were
 33 the second time: `account_id`, the 31 ECR image URIs and the Cognito domain
-prefix.
+prefix. Cognito has since been removed (it was never used), so the next move
+has 32.
 
 ```bash
 sed -i 's/<old-account-id>/<new-account-id>/g' terragrunt/envs/dev/eu-central-1/env.hcl
@@ -530,18 +531,17 @@ Clients must **reconnect** — routes are pushed at connection time.
 
 ## 14. HTTPS: certificates and the ALB
 
-Terraform does not own this, and deliberately so. ACM DNS validation needs
-records added at an external registrar (there is no Route 53 zone), so an apply
-would block indefinitely waiting for a human. `env.hcl` therefore keeps
-`alb_certificate_arn = null`, and with it null the `alb` module builds:
+The **certificates** stay outside Terraform: ACM DNS validation needs records
+added at an external registrar (there is no Route 53 zone), so an apply would
+block indefinitely waiting for a human. The **listeners** are Terraform's. Until
+`alb_certificate_arn` is set, the `alb` module builds:
 
 | listener | what Terraform creates |
 |---|---|
 | `:80` | HTTP, default action = **`fixed-response 503`** |
 | `:443` | **not created at all** |
 
-Two scripts turn that into a working HTTPS front end. Run them in order, after
-the infrastructure exists.
+So: request the certificates (14a), then hand their ARNs to Terraform (14b).
 
 ### 14a. Request the certificates
 
@@ -577,27 +577,48 @@ Also point each served host at the **new** ALB, for example a `CNAME`
 `api.dev.binbon.ch` → `binbon-dev-alb-<id>.eu-central-1.elb.amazonaws.com`.
 The ALB's DNS name changes with every account.
 
-### 14b. Configure the ALB
+### 14b. Hand the certificates to Terraform
 
-```bash
-./scripts/configure-alb.sh \
-    --default-cert <arn> \
-    --sni-cert     <arn>
+Once every certificate is `ISSUED`, `request-certs.sh` prints the two lines for
+`env.hcl`:
+
+```hcl
+alb_certificate_arn             = "<api.dev.binbon.ch arn>"
+alb_additional_certificate_arns = ["<*.binbon.ch arn>"]
 ```
 
-`request-certs.sh` prints this command with the ARNs already filled in. The
-script is idempotent and supports `--dry-run`. It sets:
+Then apply `alb`, then `services`:
 
-- `:443` HTTPS with the default certificate, TLS policy, and a default forward
-  to the api-gateway target group
-- the second certificate attached over **SNI** (an ALB serves several)
-- a `/api/*` rule at priority 2 forwarding to api-gateway
-- `:80` redirecting **301** to HTTPS
+```bash
+./scripts/tg.sh alb apply
+./scripts/tg.sh services apply
+```
 
-> [!WARNING]
-> These changes are invisible to Terraform. Running `terragrunt apply` on the
-> `alb` component afterwards reverts `:80` to the 503 fixed-response and leaves
-> `:443` orphaned. **Re-run `configure-alb.sh` after any `alb` apply.**
+| | |
+|---|---|
+| `:443` | HTTPS, the default certificate plus the others over **SNI**, TLS policy `ELBSecurityPolicy-TLS13-1-2-Res-PQ-2025-09`; default action 404 |
+| `:80` | **301** to HTTPS for every path |
+| api-gateway's rule | moves to `:443` with `services`, for `/api/*` and `/health` |
+
+`services` has to follow `alb`. The `/api/*` rule attaches to the `alb`
+component's `listener_arn` output, which is `:443` once a certificate is set and
+`:80` until then.
+
+> [!CAUTION]
+> This used to be `scripts/configure-alb.sh`, which built `:443` outside
+> Terraform. It left a hole: the `/api/*` rule stayed on `:80`, so API calls
+> over `http://` were **served unencrypted instead of redirected**, tokens
+> included. An `alb` apply also reverted `:80` to the 503. The script is gone.
+> If an account still has a hand-made `:443` listener, import it rather than
+> deleting it, and nothing goes down:
+>
+> ```bash
+> ./scripts/tg.sh alb import 'aws_lb_listener.https[0]' <listener arn>
+> ./scripts/tg.sh alb import 'aws_lb_listener_certificate.additional["<cert arn>"]' '<listener arn>_<cert arn>'
+> ```
+>
+> Then apply `alb` and `services`, and delete the script's leftover priority-2
+> `/api/*` rule on `:443`.
 
 ### Verifying
 
@@ -675,8 +696,9 @@ Without the variable the workflow fails at the credentials step.
 2. **The OpenVPN AMI Marketplace subscription** — AWS exposes no API to accept
    Marketplace terms.
 3. **`scripts/request-certs.sh`** — ACM DNS validation needs records at an
-   external registrar, so an apply would block indefinitely.
-4. **`scripts/configure-alb.sh`** — depends on (3).
+   external registrar, so an apply would block indefinitely. Once the
+   certificates are issued and their ARNs are in `env.hcl`, the workflow
+   applies the HTTPS listener like anything else.
 
 Everything else, including the per-service databases, runs in the workflow.
 
@@ -919,7 +941,7 @@ What the infra provides is worked out from the same sources `services.hcl`
 merges:
 
 - `env.hcl` `environment` and `secret_arns`;
-- Cognito, and the Redpanda credentials when `redpanda_user` is set;
+- the Redpanda credentials when `redpanda_user` is set;
 - the Keyspaces flags, `internal_service_urls` and `DB_*` for
   `postgres_service_databases`;
 - `HEALTH_REQUIRES_KAFKA` and `service_secret_keys`, where `DATABASE_URL` is

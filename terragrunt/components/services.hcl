@@ -137,12 +137,6 @@ config_path="../data"
 }
  mock_outputs_allowed_terraform_commands=["init","validate","plan","destroy"] 
 }
-dependency "cognito" {
-config_path="../cognito"
- mock_outputs={user_pool_id="eu-central-1_mock",client_id="mock-client-id",issuer_url="https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_mock"
-}
- mock_outputs_allowed_terraform_commands=["init","validate","plan","destroy"] 
-}
 dependency "redpanda" {
   config_path = "../redpanda"
 
@@ -182,11 +176,6 @@ inputs = {
     name => merge(service, {
       environment = merge(
         service.environment,
-        {
-          COGNITO_USER_POOL_ID = dependency.cognito.outputs.user_pool_id
-          COGNITO_CLIENT_ID    = dependency.cognito.outputs.client_id
-          COGNITO_ISSUER       = dependency.cognito.outputs.issuer_url
-        },
         service.redpanda_user == null ? {} : {
           REDPANDA_SASL_USERNAME = dependency.redpanda.outputs.service_usernames[service.redpanda_user]
         },
