@@ -555,11 +555,13 @@ So: request the certificates (14a), then hand their ARNs to Terraform (14b).
 
 ```bash
 ./scripts/request-certs.sh                                    # prompts
-./scripts/request-certs.sh --domain '*.binbon.ch' --domain api.dev.binbon.ch
+./scripts/request-certs.sh --domain '*.dev.binbon.ch'
 ```
 
-Dev serves those two names: `api.dev.binbon.ch` as the default certificate and
-`*.binbon.ch` over SNI. Certificates belong to one account, so a new account
+Dev uses **one** certificate, `*.dev.binbon.ch`. It covers every host on the
+ALB: `api.dev.binbon.ch` and `api-gateway.dev.binbon.ch`. (It used to be
+`api.dev.binbon.ch` plus `*.binbon.ch`, and neither covered
+`api-gateway.dev.binbon.ch`.) Certificates belong to one account, so a new account
 requests them again, with **new** validation CNAMEs. Delete the old account's
 records.
 
@@ -591,8 +593,8 @@ Once every certificate is `ISSUED`, `request-certs.sh` prints the two lines for
 `env.hcl` (null until now, see step 5):
 
 ```hcl
-alb_certificate_arn             = "<api.dev.binbon.ch arn>"
-alb_additional_certificate_arns = ["<*.binbon.ch arn>"]
+alb_certificate_arn             = "<*.dev.binbon.ch arn>"
+alb_additional_certificate_arns = []   # more certificates, by SNI, only if a host needs one
 ```
 
 Then apply `alb`, then `services`:
