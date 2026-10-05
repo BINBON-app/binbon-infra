@@ -205,3 +205,15 @@ resource "aws_eip" "vpn" {
   domain   = "vpc"
   tags     = merge(var.tags, { Name = "${var.name}-vpn" })
 }
+
+# VPN clients reach private services as this instance (Access Server's
+# private_access = "nat"), so each service's security group must admit the VPN's.
+resource "aws_vpc_security_group_ingress_rule" "from_vpn" {
+  for_each                     = var.reachable_ports
+  security_group_id            = each.value.security_group_id
+  referenced_security_group_id = aws_security_group.vpn.id
+  from_port                    = each.value.port
+  to_port                      = each.value.port
+  ip_protocol                  = "tcp"
+  description                  = "${each.key} from VPN clients"
+}

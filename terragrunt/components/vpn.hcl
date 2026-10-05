@@ -40,6 +40,13 @@ config_path="../alb"
 }
  mock_outputs_allowed_terraform_commands=["init","validate","plan","destroy"]
 }
+dependency "data" {
+config_path="../data"
+ mock_outputs={security_group_id="sg-00000000"
+}
+ mock_outputs_allowed_terraform_commands=["init","validate","plan","destroy"]
+}
+# What VPN clients may reach. pgAdmin and other database tools: Aurora on 5432.
 inputs={
-name="binbon-${local.env.locals.environment}",vpc_id=dependency.network.outputs.vpc_id,public_subnet_id=dependency.network.outputs.public_subnet_ids[0],app_security_group_id=dependency.alb.outputs.task_security_group_id,ami_id=local.env.locals.vpn.ami_id,instance_type=local.env.locals.vpn.instance_type,key_name=local.env.locals.vpn.key_name,admin_cidrs=local.env.locals.vpn.admin_cidrs,tags=local.tags
+name="binbon-${local.env.locals.environment}",vpc_id=dependency.network.outputs.vpc_id,public_subnet_id=dependency.network.outputs.public_subnet_ids[0],app_security_group_id=dependency.alb.outputs.task_security_group_id,reachable_ports={postgres={security_group_id=dependency.data.outputs.security_group_id,port=5432}},ami_id=local.env.locals.vpn.ami_id,instance_type=local.env.locals.vpn.instance_type,key_name=local.env.locals.vpn.key_name,admin_cidrs=local.env.locals.vpn.admin_cidrs,tags=local.tags
 }

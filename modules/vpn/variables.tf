@@ -38,3 +38,11 @@ variable "tags" {
   type    = map(string)
   default = {}
 }
+variable "reachable_ports" {
+  description = "Private services VPN clients may reach, as name => { security_group_id, port }. Access Server NATs client traffic to this instance, so each becomes an ingress rule from the VPN's security group."
+  type = map(object({
+    security_group_id = string
+    port              = number
+  }))
+  default = {}
+}
