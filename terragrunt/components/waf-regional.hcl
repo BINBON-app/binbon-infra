@@ -28,8 +28,11 @@ env=read_terragrunt_config(find_in_parent_folders("env.hcl"))
 terraform {
 source=dirname(find_in_parent_folders("modules/waf/main.tf"))
 }
-# Attached to the ALB (components/alb.hcl). SizeRestrictions_BODY only counts:
-# it blocks bodies over 8 KB, and multipart uploads go through api-gateway.
+# Attached to the ALB (components/alb.hcl). Two body rules only count, because
+# multipart uploads (videos, reels, avatars) go through api-gateway:
+#   SizeRestrictions_BODY   blocks every body over 8 KB.
+#   CrossSiteScripting_BODY reads raw media bytes as markup; it blocked
+#                           POST /api/v1/videos/publish and /api/v1/reels.
 inputs={
-name="binbon-${local.env.locals.environment}-regional",scope="REGIONAL",rate_limit=2000,common_rules_count_only=["SizeRestrictions_BODY"],tags=local.tags
+name="binbon-${local.env.locals.environment}-regional",scope="REGIONAL",rate_limit=2000,common_rules_count_only=["SizeRestrictions_BODY","CrossSiteScripting_BODY"],tags=local.tags
 }
