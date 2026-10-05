@@ -35,6 +35,16 @@ env=read_terragrunt_config(find_in_parent_folders("env.hcl"))
   #
   # INTERNAL_API_KEY goes only to the services whose config.rs reads it, i.e.
   # those on either end of a privileged internal call.
+  # Every service gets the platform secrets, so a developer whose code starts
+  # reading one of them needs no infra change. api-gateway is exempt: it faces
+  # the internet and is a pure proxy that never touches a token, so it keeps
+  # only what its own list names. service_secret_keys below adds the
+  # specialised ones (S3, Scylla, ClickHouse, OpenSearch, ...) per service;
+  # scripts/check-service-config.py in the backend repo still flags anything
+  # missing.
+  platform_secret_keys   = ["INTERNAL_API_KEY", "JWT_SECRET", "KAFKA_BROKERS", "REDIS_URL"]
+  platform_secret_exempt = ["api-gateway"]
+
   service_secret_keys = {
     "api-gateway"               = ["REDIS_URL"]
     "auth-service"              = ["DATABASE_URL", "INTERNAL_API_KEY", "JWT_SECRET", "KAFKA_BROKERS", "REDIS_URL"]
@@ -230,7 +240,10 @@ inputs = {
       secret_arns = merge(
         service.secret_arns,
         {
-          for key in lookup(local.service_secret_keys, name, []) :
+          for key in distinct(concat(
+            contains(local.platform_secret_exempt, name) ? [] : local.platform_secret_keys,
+            lookup(local.service_secret_keys, name, [])
+          )) :
           key => "${dependency.secrets.outputs.secret_arn}:${key}::"
           if key != "DATABASE_URL"
         },

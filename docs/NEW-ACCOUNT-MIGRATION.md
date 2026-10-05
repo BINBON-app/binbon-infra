@@ -857,6 +857,37 @@ python3 scripts/check-kafka-infra.py --infra ../binbon-aws-terraform-complete --
 > both directions. If it ever flags something that isn't real, fix the rule in
 > the script rather than granting the permission.
 
+#### The fix opens itself: automatic infra pull requests
+
+On a **push to `dev`**, a failing check doesn't stop at reporting. It runs
+`check-kafka-infra.py --fix` against this repo's `main`, which writes the
+missing **topics** (2 partitions, delete, 7 days, like every `.events` topic
+here) and **ACLs** (the READ or WRITE, plus DESCRIBE) into dev's `env.hcl`. It
+then opens a pull request here on an `auto/kafka-<sha>` branch, and the PR body
+lists exactly what it adds. From there:
+
+1. `kafka-apply.yml` (this repo) runs a `redpanda` **plan** on the pull
+   request, so the review is of real topics and ACLs.
+2. **Merge it**, and the same workflow **applies** `redpanda`.
+3. Re-run the backend's Kafka check, and it passes.
+
+A developer's new topic or permission therefore costs one review and merge.
+Two cases still need a person, and the PR says so:
+
+- a service with **no Redpanda user** at all needs a password secret
+  (`bootstrap-secrets.sh`) and `redpanda_user` wiring;
+- a **user that isn't wired** to its ECS service.
+
+While one automatic PR is open, later pushes don't open another; merge it and
+re-run. The fix was tested on a copy of `env.hcl` with a topic and two ACLs
+removed: it restored all three, the result was valid HCL, and the check went
+from 5 gaps to 0.
+
+It needs a second secret on the backend repo, **`INFRA_PR_TOKEN`**: a
+fine-grained token (or, better, a GitHub App) on `binbon-infra` with
+**Contents** and **Pull requests** read/write. Without it, the check fails as
+before and warns that no PR was opened.
+
 #### The token it needs
 
 The check runs in the backend repo but reads this one, which is private, and a
@@ -1034,6 +1065,19 @@ is a **dev fallback**: the service starts normally and quietly misbehaves.
 - **`MEDIA_URL_SIGNING_KEY`:** media-service never got it, so it signed HLS URLs
   with a key anyone could read in the source. In production that route would
   have answered 503 instead.
+
+### Platform secrets by default
+
+Every service except **api-gateway** gets the platform secrets
+(`platform_secret_keys` in `components/services.hcl`): `INTERNAL_API_KEY`,
+`JWT_SECRET`, `KAFKA_BROKERS` and `REDIS_URL`. A developer whose code starts
+reading one of them needs no infra change. Missing `INTERNAL_API_KEY` was the
+most common gap here, and it can't happen any more.
+
+api-gateway is exempt (`platform_secret_exempt`): it faces the internet and is a
+pure proxy that never touches a token. Specialised secrets (S3, Scylla,
+ClickHouse, OpenSearch, `MEDIA_URL_SIGNING_KEY`) stay per service in
+`service_secret_keys`, and the check below still catches one that's missing.
 
 ### The check
 

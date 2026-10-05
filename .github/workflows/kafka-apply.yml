@@ -1,0 +1,67 @@
+name: Kafka apply (redpanda)
+
+# The second half of the automatic Kafka flow. When a backend push to dev uses
+# a topic or an ACL this repo doesn't provision, the backend's Kafka check
+# (kafka-infra-check.yml there) writes the missing entries into dev's env.hcl
+# and opens a pull request here on an auto/kafka-* branch.
+#
+#   pull request -> plan of the redpanda stack, so the reviewer sees exactly
+#                   which topics and ACLs it adds
+#   merge to main -> apply
+#
+# Any other change to dev's env.hcl also runs it; a redpanda plan with nothing
+# to do is a no-op. Re-run the backend's Kafka check after the apply and it
+# goes green.
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ["terragrunt/envs/dev/eu-central-1/env.hcl"]
+  push:
+    branches: [main]
+    paths: ["terragrunt/envs/dev/eu-central-1/env.hcl"]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  # Shared with terraform-apply.yml: one Terraform run per environment at a time.
+  group: terraform-dev
+  cancel-in-progress: false
+
+jobs:
+  redpanda:
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_TERRAFORM_APPLY_ROLE_ARN }}
+          aws-region: eu-central-1
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.8"
+          terraform_wrapper: false
+
+      - name: Install Terragrunt
+        run: |
+          curl -Lo /tmp/terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/v1.1.2/terragrunt_linux_amd64
+          sudo install -m 0755 /tmp/terragrunt /usr/local/bin/terragrunt
+
+      - name: Plan the redpanda stack
+        env:
+          TG_NON_INTERACTIVE: "true"
+        working-directory: terragrunt/envs/dev/eu-central-1/redpanda
+        run: terragrunt --non-interactive plan -input=false -no-color
+
+      - name: Apply the redpanda stack
+        if: github.event_name != 'pull_request'
+        env:
+          TG_NON_INTERACTIVE: "true"
+        working-directory: terragrunt/envs/dev/eu-central-1/redpanda
+        run: terragrunt --non-interactive apply -input=false -auto-approve -no-color
