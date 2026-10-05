@@ -511,14 +511,36 @@ systemctl enable --now openvpnas
 > account owner's decision to make, not something to automate on their behalf
 > without asking.
 
-Set an admin password and store it rather than leaving the installer's:
+### Logins: `scripts/vpn-user.sh`
+
+The installer leaves the `openvpn` admin with a random password nobody knows,
+and no other logins. `vpn-user.sh` manages them without anyone logging in to
+the host:
 
 ```bash
-/usr/local/openvpn_as/scripts/sacli --user openvpn --new_pass '<pw>' SetLocalPassword
-/usr/local/openvpn_as/scripts/sacli --user openvpn --key prop_superuser --value true UserPropPut
+./scripts/vpn-user.sh admin-password        # admin UI: https://<vpn-ip>:943/admin
+./scripts/vpn-user.sh add <user>            # one login per person
+./scripts/vpn-user.sh password <user>       # print it, to hand on privately
+./scripts/vpn-user.sh profile <user>        # save <user>.ovpn for OpenVPN Connect
+./scripts/vpn-user.sh remove <user>         # revoke certs, delete login and secret
+./scripts/vpn-user.sh list | info           # logins; address and routes
 ```
 
-Keep it in Secrets Manager as `binbon-<env>-vpn-admin`.
+Each password is generated locally and kept in Secrets Manager
+(`binbon-<env>-vpn-admin`, `binbon-<env>-vpn-user-<name>`). The script drives
+the host over SSM, and the command carries only the secret's **name**. The
+host reads the value itself (its role may read `binbon-<env>-vpn-*`, nothing
+else), so no password lands in SSM's command history.
+
+To connect, use **OpenVPN Connect**: either Import Profile → URL →
+`https://<vpn-ip>` and log in, or import the `.ovpn` from `profile`. That
+file holds the user's certificate and key, so `*.ovpn` is gitignored. The VPN
+is a split tunnel: only `10.20.0.0/16` goes through it.
+
+> [!NOTE]
+> `remove` schedules the secret's deletion with a 7-day recovery window. Re-adding
+> the same name within those days fails until you restore the secret
+> (`aws secretsmanager restore-secret`) or the window passes.
 
 ### If the VPN connects but nothing behind it responds
 

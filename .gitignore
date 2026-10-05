@@ -7,3 +7,6 @@ crash.log
 .binbon-*-secrets.env
 *.auto.tfvars.json
 *.bak
+
+# OpenVPN client profiles hold a user certificate and key (scripts/vpn-user.sh profile)
+*.ovpn

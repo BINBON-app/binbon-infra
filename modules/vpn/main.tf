@@ -81,6 +81,26 @@ resource "aws_iam_role_policy_attachment" "vpn_ssm" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
+# scripts/vpn-user.sh sets VPN passwords over SSM. Putting a password in the
+# SSM command would leave it readable in the command history, so the command
+# carries only a secret NAME and the host reads the value itself. Read-only, and
+# only the VPN's own secrets.
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+
+resource "aws_iam_role_policy" "vpn_secrets" {
+  name = "read-vpn-secrets"
+  role = aws_iam_role.vpn.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "secretsmanager:GetSecretValue"
+      Resource = "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:${var.name}-vpn-*"
+    }]
+  })
+}
+
 resource "aws_iam_instance_profile" "vpn" {
   name = "${var.name}-vpn"
   role = aws_iam_role.vpn.name
