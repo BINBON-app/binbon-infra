@@ -246,7 +246,7 @@ locals {
         }, group_permissions = {
         }, cluster_permissions = []
       }
-      "analytics-service" = { password_wo_version = 1, topic_permissions = { "follow.events" = ["READ", "DESCRIBE"], "video.events" = ["READ", "DESCRIBE"], "gift.events" = ["READ", "DESCRIBE"]
+      "analytics-service" = { password_wo_version = 1, topic_permissions = { "follow.events" = ["READ", "DESCRIBE"], "video.events" = ["READ", "DESCRIBE"], "gift.events" = ["READ", "DESCRIBE"], "story.events" = ["READ", "DESCRIBE"]
         }, group_permissions = {
         }, cluster_permissions = []
       }
@@ -274,7 +274,7 @@ locals {
         }, group_permissions = {
         }, cluster_permissions = []
       }
-      "wallet-service" = { password_wo_version = 1, topic_permissions = { "gift.events" = ["WRITE", "DESCRIBE"]
+      "wallet-service" = { password_wo_version = 1, topic_permissions = { "gift.events" = ["WRITE", "DESCRIBE"], "notification.events" = ["WRITE", "DESCRIBE"]
         }, group_permissions = {
         }, cluster_permissions = []
       }

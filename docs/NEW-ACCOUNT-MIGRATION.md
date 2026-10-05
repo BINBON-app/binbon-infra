@@ -934,12 +934,30 @@ apply `services`. It takes effect on that service's next deploy.
 
 ## 18. Keyspaces table consistency
 
-On Amazon Keyspaces the services can't create their own tables
-(`MIGRATE_ON_START=false`), so every `CREATE TABLE` in the backend has to be
-provisioned here. The tables are listed in
-**`terragrunt/keyspaces/tables.json`**, which `components/data.hcl` reads for
-every environment. It's generated from the backend code, so don't edit it by
-hand.
+> [!IMPORTANT]
+> **Today the services own every table.** chat, comment, engagement, feed and
+> story each run `<service> provision` before they roll out. It's a one-off ECS
+> task with the provisioner credential (CREATE and ALTER, no DROP). It creates
+> missing tables, adds missing columns and options, and refuses key or type
+> changes. All 90 tables were handed over from Terraform with
+> `terragrunt state rm 'aws_keyspaces_table.this'`. Nothing in AWS changed,
+> and `tables.json` is now `"tables": {}`. Terraform keeps only the keyspace.
+>
+> **Why the handover had to happen:** while Terraform still listed a table, a
+> provision step adding a column left Terraform with a schema it didn't know.
+> The next `data` apply would have **replaced the table, dropping its data**. A
+> push that added 26 columns turned the Keyspaces check red for exactly that
+> reason.
+>
+> The rest of this step describes the Terraform-owned path, which still applies
+> to any crate that doesn't provision its own tables. `--emit` leaves
+> self-provisioned tables out.
+
+On Amazon Keyspaces the services start with `MIGRATE_ON_START=false`, so a
+table the service doesn't provision itself has to be provisioned here. Those
+tables are listed in **`terragrunt/keyspaces/tables.json`**, which
+`components/data.hcl` reads for every environment. It's generated from the
+backend code, so don't edit it by hand.
 
 The table options matter as much as the columns. A table created without
 `ttl`, without its `default_time_to_live`, or without `client_side_timestamps`

@@ -46,7 +46,7 @@ env=read_terragrunt_config(find_in_parent_folders("env.hcl"))
     "feed-service"              = ["INTERNAL_API_KEY", "JWT_SECRET", "KAFKA_BROKERS", "REDIS_URL", "SCYLLA_KEYSPACE", "SCYLLA_NODES", "SCYLLA_USERNAME", "SCYLLA_PASSWORD"]
     "engagement-service"        = ["JWT_SECRET", "KAFKA_BROKERS", "REDIS_URL", "SCYLLA_KEYSPACE", "SCYLLA_NODES", "SCYLLA_USERNAME", "SCYLLA_PASSWORD"]
     "recommendation-service"    = ["INTERNAL_API_KEY", "JWT_SECRET", "KAFKA_BROKERS", "REDIS_URL"]
-    "comment-service"           = ["JWT_SECRET", "KAFKA_BROKERS", "REDIS_URL", "SCYLLA_KEYSPACE", "SCYLLA_NODES", "SCYLLA_USERNAME", "SCYLLA_PASSWORD"]
+    "comment-service"           = ["INTERNAL_API_KEY", "JWT_SECRET", "KAFKA_BROKERS", "REDIS_URL", "SCYLLA_KEYSPACE", "SCYLLA_NODES", "SCYLLA_USERNAME", "SCYLLA_PASSWORD"]
     "story-service"             = ["INTERNAL_API_KEY", "JWT_SECRET", "KAFKA_BROKERS", "REDIS_URL", "SCYLLA_KEYSPACE", "SCYLLA_NODES", "SCYLLA_USERNAME", "SCYLLA_PASSWORD"]
     "sticker-service"           = ["DATABASE_URL", "INTERNAL_API_KEY", "JWT_SECRET", "REDIS_URL"]
     "search-service"            = ["JWT_SECRET", "KAFKA_BROKERS", "OPENSEARCH_URL", "REDIS_URL"]
@@ -64,7 +64,7 @@ env=read_terragrunt_config(find_in_parent_folders("env.hcl"))
     "pk-service"                = ["DATABASE_URL", "INTERNAL_API_KEY", "JWT_SECRET", "KAFKA_BROKERS", "REDIS_URL"]
     "location-service"          = ["DATABASE_URL", "INTERNAL_API_KEY", "JWT_SECRET", "REDIS_URL"]
     "audit-service"             = ["DATABASE_URL", "INTERNAL_API_KEY", "JWT_SECRET", "KAFKA_BROKERS", "REDIS_URL"]
-    "report-service"            = ["DATABASE_URL", "JWT_SECRET", "KAFKA_BROKERS", "REDIS_URL"]
+    "report-service"            = ["DATABASE_URL", "INTERNAL_API_KEY", "JWT_SECRET", "KAFKA_BROKERS", "REDIS_URL"]
     "moderation-service"        = ["DATABASE_URL", "JWT_SECRET", "KAFKA_BROKERS", "REDIS_URL"]
     "fraud-service"             = ["DATABASE_URL", "INTERNAL_API_KEY", "JWT_SECRET", "REDIS_URL"]
   }
