@@ -264,7 +264,7 @@ only the VPC (`10.20.0.0/16`) goes through it.
 Two separate Web ACLs exist because AWS WAF scopes are not interchangeable:
 
 - `waf-cloudfront` — scope `CLOUDFRONT`, must be created in `us-east-1` regardless of where the rest of the platform runs. Attached to the media CloudFront distribution.
-- `waf-regional` — scope `REGIONAL`, created in `eu-central-1`. Attached to the ALB, so it sits in front of every API request. In its common rule set, `SizeRestrictions_BODY` only **counts** (`common_rules_count_only`): it blocks bodies over 8 KB, and multipart uploads go through api-gateway. Requests without a `User-Agent` header are blocked (`NoUserAgent_HEADER`).
+- `waf-regional` — scope `REGIONAL`, created in `eu-central-1`. Attached to the ALB, so it sits in front of every API request. In its common rule set, two body rules only **count** (`common_rules_count_only`), because multipart uploads go through api-gateway: `SizeRestrictions_BODY` blocks bodies over 8 KB, and `CrossSiteScripting_BODY` read raw video bytes as markup and blocked video and reel uploads. Requests without a `User-Agent` header are blocked (`NoUserAgent_HEADER`).
 
 There is no CloudFront in front of the API. It used to be planned (the `edge` component), but API responses are per user and can't be cached, so it added cost and a second WAF without much benefit. The ALB, its WAF and Terraform-owned HTTPS replace it.
 

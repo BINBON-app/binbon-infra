@@ -81,7 +81,10 @@ for each:
   and until rollback if that task fails. Before this, a push touching many
   services couldn't place their new tasks and ECS rolled them back (27 of 31,
   once). A one-at-a-time deploy mode was tried and reverted, because a
-  full-fleet deploy took hours.
+  full-fleet deploy took hours. One gap remains: the five Keyspaces services
+  run their **provision task while the old task still runs**, so when several
+  deploy at once one can fail with *"the provision task did not start"*. That
+  service keeps its previous version; redeploy it alone.
 
 Undo all three once the limits lift. Without `ecs_deployment`, ECS's
 zero-downtime defaults (100 / 200) apply.
@@ -741,7 +744,8 @@ What they can't reach from outside, by design or not yet:
 
 The WAF in front (see *Post-migration notes*) returns 403 to requests without
 a `User-Agent`, and past 2000 requests per IP per 5 minutes. A whole team
-running the full collection from one office IP can hit that.
+running the full collection from one office IP can hit that. A 403 whose body
+is an HTML page rather than JSON always comes from the WAF.
 
 ---
 
@@ -1049,9 +1053,45 @@ missing or differs in any of these:
 It also fails if `data.hcl` stops reading the file. As with Kafka, **the order
 is infra first**: regenerate, merge and apply here, then the backend PR passes.
 
+It fails, too, when a CQL statement **queries a table nothing creates**: no
+service's provision list and not `tables.json`. feed-service shipped 11 such
+tables (`post_extras`, the poll and playlist tables, drafts, threads) "left to
+the infra layer". Its statement groups degraded to 503 and nothing failed,
+until the tables were added to feed's provision list. Only strings starting
+with an upper-case CQL verb count, and sqlx-only files are skipped.
+
 ```bash
 python3 scripts/check-keyspaces-infra.py --infra ../binbon-aws-terraform-complete
 ```
+
+### Keyspaces accepts less than ScyllaDB
+
+Local development runs ScyllaDB, which accepts CQL that Amazon Keyspaces
+rejects at PREPARE. comment-service's keyset paging
+`(created_at, id) < (?, ?)` (a multi-column relation) crashed it at startup on
+dev. Page with two single-column reads instead: the rest of the cursor's
+timestamp (`created_at = ? AND id < ?`), then the timestamps beyond it
+(`created_at < ?`). feed, story and comment do it this way.
+
+Both comment-service and feed-service have an **ignored** test,
+`keyspaces_prepare`, that runs the service's own `Db::connect` against the
+real keyspace and fails on any statement Keyspaces rejects. feed's version also
+requires every optional statement group. Run it before pushing CQL changes,
+with the app credential from `binbon-<env>-infra-secrets`:
+
+```bash
+SCYLLA_NODES=cassandra.eu-central-1.amazonaws.com:9142 SCYLLA_KEYSPACE=<keyspace> \
+SCYLLA_USERNAME=... SCYLLA_PASSWORD=... \
+cargo test -p <service> --features keyspaces --test keyspaces_prepare -- --ignored --nocapture
+```
+
+feed's file also has `provision_plan`, which dry-runs `feed-service provision`
+(or applies it with `PROVISION_APPLY=1`, using the provisioner credential).
+
+> [!NOTE]
+> A **feature gate opens only at startup**: a service that started before its
+> tables existed keeps the feature at 503 until its task restarts. After
+> creating tables by hand, force a new deployment of that service.
 
 > [!NOTE]
 > Tables that are only *described* in docs and never created in code aren't
@@ -1227,12 +1267,18 @@ then type the fixed one.
 - **The API's WAF is on the ALB.** `waf-regional` is attached to the ALB:
   rate limit 2000 per IP per 5 minutes, AWS common rules, known bad inputs and
   IP reputation. There is no CloudFront in front of the API; the `edge`
-  component was dropped. `SizeRestrictions_BODY` only counts, because
-  multipart uploads over 8 KB go through api-gateway. Two things look like app
+  component was dropped. Two body rules only count, because multipart
+  uploads go through api-gateway: `SizeRestrictions_BODY` (it blocks every body
+  over 8 KB) and `CrossSiteScripting_BODY` (it read raw video bytes as markup
+  and returned 403 on `POST /api/v1/videos/publish` and `/api/v1/reels`). A
+  403 with an HTML body (`<center><h1>403 Forbidden</h1></center>`) is the
+  WAF, never a service; the services answer in JSON. Two things look like app
   bugs and aren't. A request **without a `User-Agent`** gets 403
-  (`NoUserAgent_HEADER`). User text containing script tags or file paths can
-  get 403 from the XSS and LFI body rules. Check the web ACL's sampled
-  requests before debugging the service.
+  (`NoUserAgent_HEADER`). User text containing file paths can get 403 from the
+  LFI body rule. Check the web ACL's sampled requests before debugging the
+  service; each one names the rule that blocked it. If another body rule
+  blocks legitimate uploads, add it to `common_rules_count_only` in
+  `terragrunt/components/waf-regional.hcl`.
 - **The deploy signs in through OIDC.** The backend's deploy assumes
   `binbon-github-ecs-deploy` for two hours, so no AWS keys are stored in
   GitHub (step 10). The role has to allow every call the workflow makes. It
