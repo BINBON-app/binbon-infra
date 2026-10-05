@@ -110,7 +110,7 @@ terragrunt run-all plan
 
 ```text
 network
-  ├── foundation ──┬── alb ──┬── data
+  ├── foundation ──┬── alb ──┬── data ── vpn
   │                │   │    └── opensearch
   │                │   └── waf-regional
   │                └── media ── waf-cloudfront
@@ -132,6 +132,7 @@ network
 | `media` | Private S3, CloudFront and MediaConvert role | `foundation`, `waf-cloudfront` |
 | `waf-cloudfront` | CloudFront-scope WAF Web ACL (`us-east-1`) | — |
 | `waf-regional` | Regional-scope WAF Web ACL (`eu-central-1`), attached to the ALB | — |
+| `vpn` | OpenVPN Access Server for operator access into the VPC; `reachable_ports` opens chosen private services (dev: Aurora 5432) to VPN clients | `network`, `alb`, `data` |
 | `redpanda` | Serverless cluster, topics, users and ACLs | — |
 | `redpanda-endpoint` | AWS PrivateLink endpoint and private DNS | `network`, `alb`, `redpanda` |
 | `services` | ECS tasks and autoscaling | Platform dependencies above |
@@ -227,6 +228,34 @@ aws ecs update-service --cluster binbon-dev --service api-gateway \
 
 aws ecs wait services-stable --cluster binbon-dev --services api-gateway
 ```
+
+---
+
+## 🔑 Operator access: VPN and databases
+
+The `vpn` component runs OpenVPN Access Server on a small EC2 instance with an
+Elastic IP. It configures itself on first boot, and clients get a split tunnel:
+only the VPC (`10.20.0.0/16`) goes through it.
+
+- **Logins:** `scripts/vpn-user.sh` creates, resets and removes them over SSM
+  and keeps every password in Secrets Manager (`binbon-<env>-vpn-*`). The SSM
+  command carries only the secret's name, and the host reads the value itself.
+  `profile <user>` saves a `.ovpn` for **OpenVPN Connect**, or import by URL,
+  `https://<vpn-ip>`.
+- **What VPN clients can reach:** Access Server passes client traffic on as the
+  VPN instance, so each private service must admit the VPN's security group.
+  `reachable_ports` in `components/vpn.hcl` lists them. Dev opens Aurora on
+  5432, so pgAdmin connects to the cluster endpoint with SSL mode `require`
+  (`rds.force_ssl = 1`).
+- **Database credentials:** the master user's password is RDS-managed and
+  **rotates about every 7 days**, so re-read its secret when a saved password
+  stops working. See `docs/NEW-ACCOUNT-MIGRATION.md`, step 13.
+
+> [!WARNING]
+> The admin web UI (943) and SSH (22) are open to `admin_cidrs`, which is
+> `0.0.0.0/0` by default. Narrow it to your own addresses in `env.hcl`. The
+> VPN ports (1194/udp, 443/tcp) stay public so clients can connect from
+> anywhere.
 
 ---
 
@@ -329,6 +358,7 @@ modules/                         # Reusable Terraform modules
   waf/                           # CloudFront/Regional WAF Web ACLs
   redpanda/                      # Serverless Kafka-compatible event bus
   redpanda-vpc-endpoint/         # AWS PrivateLink and private DNS
+  vpn/                           # OpenVPN Access Server + what VPN clients may reach
   github-oidc/                   # GitHub Actions OIDC provider + CI IAM roles
 
 terragrunt/

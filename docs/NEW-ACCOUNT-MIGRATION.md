@@ -542,12 +542,58 @@ is a split tunnel: only `10.20.0.0/16` goes through it.
 > the same name within those days fails until you restore the secret
 > (`aws secretsmanager restore-secret`) or the window passes.
 
+### Reaching the databases (pgAdmin and other tools)
+
+Access Server passes client traffic on as **the VPN instance**
+(`vpn.server.routing.private_access = "nat"`). So a private service only
+answers VPN clients if its security group admits `binbon-<env>-vpn`. The `vpn`
+component lists what VPN clients may reach in `reachable_ports`, and each entry
+becomes one ingress rule:
+
+```hcl
+reachable_ports = { postgres = { security_group_id = dependency.data.outputs.security_group_id, port = 5432 } }
+```
+
+Dev opens **Aurora on 5432** only. Redis (6379 on the same `data` group) or
+OpenSearch (443 on its own group) would each be one more entry.
+
+To connect pgAdmin, first connect the VPN, then register a server:
+
+| field | value |
+|---|---|
+| Host | the cluster endpoint, `binbon-<env>-aurora.cluster-<id>.<region>.rds.amazonaws.com` (`cluster-ro-…` for read-only queries) |
+| Port / maintenance DB | `5432` / `app` |
+| Username | `platformadmin` (the master user) |
+| Password | `aws secretsmanager get-secret-value --secret-id '<rds!cluster-… secret>' --query SecretString --output text`, the `password` field. The ARN is the cluster's `MasterUserSecret`. |
+| SSL mode | **`require`**: the cluster has `rds.force_ssl = 1` and refuses plain connections |
+
+There is one database per service (`binbon_auth`, `binbon_wallet`, …, 19 in
+all), plus `app`.
+
+> [!WARNING]
+> The master password **rotates about every 7 days** (step 15). The services
+> follow it on their own, but a password saved in pgAdmin stops working. When
+> pgAdmin reports *password authentication failed*, read the secret again.
+> `platformadmin` can change or drop anything in every service's database. A
+> separate read-only role for developers, with its own secret, would be safer
+> to hand out.
+
 ### If the VPN connects but nothing behind it responds
 
-`ovpn-init` advertises the server's **own subnet** as the private network — a
+There are two causes, and both look like a firewall problem.
+
+**The service's security group doesn't admit the VPN.** A connection times
+out even though the route is right. The service needs an entry in
+`reachable_ports` (above). Before that existed, the `data` group admitted 5432
+only from the tasks, so pgAdmin over the VPN could never connect.
+
+**The VPN advertises too small a network.**
+
+`ovpn-init` advertises the server's **own subnet** as the private network, a
 `/20` here. Clients then get a route to the VPN's subnet and nothing else, so
-Aurora, Redis and OpenSearch in the other `/20`s time out. It reads like a
-firewall problem and is not:
+Aurora, Redis and OpenSearch in the other `/20`s time out. The first-boot
+script now widens it to the VPC; `./scripts/vpn-user.sh info` shows what's
+advertised. To fix it by hand:
 
 ```bash
 sacli ConfigQuery | grep private_network   # expect the VPC /16, not a /20
