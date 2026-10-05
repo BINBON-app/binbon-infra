@@ -259,5 +259,10 @@ inputs = {
 
   redpanda_secret_name_prefix = "binbon-${local.env.locals.environment}-redpanda-"
 
+  # Per environment, from env.hcl's ecs_deployment; ECS's zero-downtime defaults
+  # (100 / 200) where an environment doesn't set it.
+  deployment_minimum_healthy_percent = try(local.env.locals.ecs_deployment.minimum_healthy_percent, 100)
+  deployment_maximum_percent         = try(local.env.locals.ecs_deployment.maximum_percent, 200)
+
   tags = local.tags
 }

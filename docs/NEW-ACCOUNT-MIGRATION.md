@@ -74,15 +74,17 @@ for each:
   because `secrets` reads media's CloudFront address.
 - `cpu = 256` per service fits all 31 in 7.75 vCPU, with room for one
   deployment at a time.
-- The deploy workflow still deploys every changed service **in parallel**. A
-  one-at-a-time mode was tried (`DEPLOY_MAX_PARALLEL`) and reverted, because a
-  full-fleet deploy then took hours. So while the quota is low, a push that
-  changes many services can't place most of the new tasks, and ECS rolls those
-  back. They keep running their previous version (27 of 31 did, once).
-  Redeploy them a few at a time with the workflow's `service` input. A push
-  that touches a few services is unaffected.
+- `ecs_deployment = { minimum_healthy_percent = 0, maximum_percent = 100 }`
+  makes a dev deploy **replace** a service's task instead of overlapping it, so
+  it needs no spare vCPU and the workflow can deploy every service in parallel.
+  The cost: each service is down for a minute or two while its new task starts,
+  and until rollback if that task fails. Before this, a push touching many
+  services couldn't place their new tasks and ECS rolled them back (27 of 31,
+  once). A one-at-a-time deploy mode was tried and reverted, because a
+  full-fleet deploy took hours.
 
-Undo both once the limits lift.
+Undo all three once the limits lift. Without `ecs_deployment`, ECS's
+zero-downtime defaults (100 / 200) apply.
 
 ### New Redpanda and ClickHouse organizations
 

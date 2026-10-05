@@ -68,3 +68,22 @@ variable "redpanda_secret_name_prefix" {
     on every migration. The names are deterministic.
   EOT
 }
+
+variable "deployment_minimum_healthy_percent" {
+  description = <<-EOT
+    ECS deployment floor. 100 (ECS's default) starts each new task before the
+    old one stops: zero downtime, but every rolling service briefly needs room
+    for one more task. 0 stops the old task first, so a deploy needs no spare
+    capacity, at the cost of the service being down while its new task starts,
+    and until rollback if that task fails. Use 0 only where downtime is
+    acceptable (dev) and capacity isn't (a small Fargate vCPU quota).
+  EOT
+  type        = number
+  default     = 100
+}
+
+variable "deployment_maximum_percent" {
+  description = "ECS deployment ceiling: 200 (the default) allows the overlap above; with a floor of 0, 100 means no extra task at all."
+  type        = number
+  default     = 200
+}

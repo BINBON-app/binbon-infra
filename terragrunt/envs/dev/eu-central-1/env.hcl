@@ -25,6 +25,13 @@ locals {
     idle_scaling          = true
     password_wo_version   = 1
   }
+  # TEMPORARY: dev deploys REPLACE a service's task instead of overlapping it.
+  # With the Fargate quota at 8 vCPU and 31 x 0.25 = 7.75 in use, an overlapping
+  # deploy has room for one service at a time, so a push touching many services
+  # rolled most of them back. With 0 / 100 a deploy needs no spare vCPU; each
+  # service is down for a minute or two while its new task starts (until rollback
+  # if that task fails). Remove once the quota is raised, back to 100 / 200.
+  ecs_deployment = { minimum_healthy_percent = 0, maximum_percent = 100 }
   # TEMPORARY: every service runs at cpu = 256 (0.25 vCPU), down from 512,
   # because the new account's Fargate On-Demand vCPU quota is 8 while the
   # increase to 64 is pending (case 179110784900123). 31 x 0.25 = 7.75, which
