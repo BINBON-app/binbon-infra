@@ -74,8 +74,14 @@ for each:
   because `secrets` reads media's CloudFront address.
 - `cpu = 256` per service fits all 31 in 7.75 vCPU, with room for one
   deployment at a time.
+- The backend repo's variable **`DEPLOY_MAX_PARALLEL = 1`** makes the deploy
+  workflow do that: one service at a time, on pushes and dispatches alike. A
+  dispatch can override it with its `max_parallel` input. Without it, a push
+  touching many services couldn't place the new tasks, and ECS rolled 27 of 31
+  back.
 
-Undo both once the limits lift.
+Undo all three once the limits lift: delete the variable with
+`gh variable delete DEPLOY_MAX_PARALLEL --repo BINBON-app/official-backend-rust`.
 
 ### New Redpanda and ClickHouse organizations
 
