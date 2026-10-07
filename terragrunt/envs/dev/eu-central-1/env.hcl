@@ -4,10 +4,10 @@ locals {
   # *.dev.binbon.ch covers every host on this ALB (api.dev, api-gateway.dev). It's
   # requested with scripts/request-certs.sh and DNS-validated at the registrar.
   # A first-level name (x.binbon.ch) pointed here would need its own certificate.
-  alb_certificate_arn             = "arn:aws:acm:eu-central-1:922640336342:certificate/3a451cb1-bf35-4ab1-aa22-e73c9eb1be5e"
+  alb_certificate_arn             = "arn:aws:acm:eu-central-1:954028443831:certificate/4c3106ed-66d7-4991-987f-de0b05481332"
   alb_additional_certificate_arns = []
   cloudfront_certificate_arn = null
-  # TEMPORARY: account 922640336342 can't create CloudFront resources until AWS
+  # TEMPORARY: a new account can't create CloudFront resources until AWS
   # verifies it, so media runs without its distribution and services get an
   # empty CDN_BASE_URL (presigned S3 URLs). Set back to true once verified,
   # then apply media, secrets, and redeploy media/user/video-processing.
@@ -23,18 +23,18 @@ locals {
     min_replica_memory_gb = 8
     max_replica_memory_gb = 8
     idle_scaling          = true
-    password_wo_version   = 1
+    password_wo_version   = 2
   }
   # TEMPORARY: dev deploys REPLACE a service's task instead of overlapping it.
-  # With the Fargate quota at 8 vCPU and 31 x 0.25 = 7.75 in use, an overlapping
+  # With the Fargate quota at 6-8 vCPU and 31 x 0.25 = 7.75 wanted, an overlapping
   # deploy has room for one service at a time, so a push touching many services
   # rolled most of them back. With 0 / 100 a deploy needs no spare vCPU; each
   # service is down for a minute or two while its new task starts (until rollback
   # if that task fails). Remove once the quota is raised, back to 100 / 200.
   ecs_deployment = { minimum_healthy_percent = 0, maximum_percent = 100 }
   # TEMPORARY: every service runs at cpu = 256 (0.25 vCPU), down from 512,
-  # because the new account's Fargate On-Demand vCPU quota is 8 while the
-  # increase to 64 is pending (case 179110784900123). 31 x 0.25 = 7.75, which
+  # because a new account's Fargate On-Demand vCPU quota is 6 while the
+  # increase to 64 is pending (requested 2026-10-07). 31 x 0.25 = 7.75, which
   # leaves room for one service's deployment at a time. Put it back to 512 once
   # the quota is raised.
   services = {
@@ -180,6 +180,10 @@ locals {
   redpanda = {
     region                      = "eu-central-1"
     enable_private_link         = true
+    # The 922640336342 account's "binbon-dev-private-link" is stuck deleting:
+    # its AWS endpoint sits in that blocked account. Redpanda keeps the name
+    # while the deletion runs, so this account's link needs another one.
+    private_link_name           = "binbon-dev-pl"
     public_networking           = "STATE_DISABLED"
     private_networking          = "STATE_ENABLED"
     allow_cluster_deletion      = true

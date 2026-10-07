@@ -80,3 +80,9 @@ variable "tags" {
   type    = map(string)
   default = {}
 }
+
+variable "private_link_name" {
+  description = "Overrides the PrivateLink's name (default <name>-private-link). Redpanda keeps a deleted link's name while its deletion runs, and a link whose AWS endpoint can't be removed (e.g. in a blocked old account) can stay deleting for good, so a new account may need a different name."
+  type        = string
+  default     = null
+}

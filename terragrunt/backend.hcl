@@ -13,8 +13,8 @@
 # An environment in a different account can carry its own backend.hcl in
 # terragrunt/envs/<env>/; the nearest file wins.
 locals {
-  account_id   = "922640336342"
-  state_bucket = "binbon-bootstrap-tfstate-20261004100200286800000001"
+  account_id   = "954028443831"
+  state_bucket = "binbon-bootstrap-tfstate-20261007120629189200000001"
   lock_table   = "binbon-bootstrap-tf-lock"
   state_region = "eu-central-1"
 }

@@ -43,7 +43,7 @@ resource "redpanda_resource_group" "this" {
 
 resource "redpanda_serverless_private_link" "this" {
   count             = var.enable_private_link ? 1 : 0
-  name              = "${var.name}-private-link"
+  name              = coalesce(var.private_link_name, "${var.name}-private-link")
   resource_group_id = redpanda_resource_group.this.id
   cloud_provider    = "aws"
   serverless_region = var.region
