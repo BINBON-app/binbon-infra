@@ -1,11 +1,11 @@
 # Migrating the platform to a new AWS account
 
 A step-by-step runbook for standing this stack up in a fresh AWS account, written
-from two actual migrations rather than from the design docs: `995192978674` →
+from three actual migrations rather than from the design docs: `995192978674` →
 `803817915623`, then `803817915623` → `922640336342` (with new Redpanda and
-ClickHouse organizations), both in `eu-central-1`. Every step that bit us in practice is called
-out, including two that fail on the first run **by design of the AWS services
-involved** and simply need a second pass.
+ClickHouse organizations), then `922640336342` → `954028443831` after AWS
+**blocked** the old account (same Redpanda and ClickHouse organizations), all in
+`eu-central-1`. Every step that bit us in practice is called out.
 
 The README's [Quick start](../README.md#-quick-start) covers the happy path. This
 document is the longer, honest version: the same journey plus the parts that are
@@ -56,7 +56,7 @@ day one, because AWS can take a day or more to act on either.
 
 | limit | symptom | fix |
 |---|---|---|
-| **Fargate On-Demand vCPU**, 6 by default | only 12 of the 31 services (0.5 vCPU each) can run; a full-fleet deploy needs about 31 | Service Quotas → AWS Fargate → `L-3032A538`; ask for 64 |
+| **Fargate On-Demand vCPU**, 6 by default (it was 6 again on the third account) | only 12 of the 31 services (0.5 vCPU each) can run; a full-fleet deploy needs about 31 | Service Quotas → AWS Fargate → `L-3032A538`; ask for 64 |
 | **CloudFront** is off until AWS verifies the account | `media` fails: *"Your account must be verified before you can add new CloudFront resources"* | a Support case (Account and billing), quoting the error |
 
 ```bash
@@ -88,6 +88,18 @@ for each:
 Undo all three once the limits lift. Without `ecs_deployment`, ECS's
 zero-downtime defaults (100 / 200) apply.
 
+> [!WARNING]
+> **If AWS blocks the account, stop deploying.** Two days in, AWS blocked
+> `922640336342` (`BlockedException: Your account is currently blocked` on
+> `RunTask`) and cut its Fargate quota to 0. Running tasks kept serving, but no
+> new task could start. With `ecs_deployment` at 0 / 100, any deploy then
+> **stops the running task first** and can't start the new one, so the service
+> goes down; admin-service did, from a console "Update service". The console
+> accepts the request; the failure shows only in the service's events a minute
+> later. Disable the deploy workflow until AWS lifts the block
+> (`gh workflow disable build-and-deploy.yml`), and contact AWS through an
+> *Account and billing* Support case.
+
 ### New Redpanda and ClickHouse organizations
 
 Signing up creates sample resources. Delete them before the first apply:
@@ -97,6 +109,26 @@ Signing up creates sample resources. Delete them before the first apply:
   `409 DUPLICATE_INSTANCE_NAME`, because ClickHouse names ignore case.
 - **Redpanda** creates a `welcome` serverless cluster and a `default` resource
   group. They don't conflict, but the cluster uses trial credit.
+
+### Leftovers when the old account is blocked or gone
+
+When the old account can't be read (blocked, closed, or its keys are gone),
+its Terraform state is lost with it, but its Redpanda and ClickHouse resources
+live on in their own organizations and still allow only the old account. Delete
+them and let the new apply recreate them (their dev data goes with them):
+
+- **ClickHouse:** stop the `binbon-<env>` service, then delete it.
+- **Redpanda:** delete the `binbon-<env>` serverless cluster and PrivateLink.
+  The PrivateLink can **stay `STATE_DELETING` indefinitely** while its AWS
+  endpoint still exists in the old account, and Redpanda keeps both its name
+  and its resource group meanwhile. Don't wait for it:
+  - import the old resource group instead of deleting it:
+    `./scripts/tg.sh redpanda import redpanda_resource_group.this <id>`;
+  - give the new link another name with `private_link_name` in the env's
+    `redpanda` block, or the create fails with `AlreadyExists`.
+
+Reading what's there needs only the organization's API credentials (Redpanda
+`GET /v1/serverless/clusters`, ClickHouse `GET /v1/organizations/<org>/services`).
 
 > [!IMPORTANT]
 > Credentials are **never** committed and never written to a local file that
@@ -260,6 +292,18 @@ ARN is valid in exactly one account. The `ecs-services` module now resolves them
 **name** instead (`binbon-<env>-redpanda-<redpanda_user>`, which is deterministic),
 driven by `redpanda_secret_name_prefix`, so `env.hcl` carries no Secrets Manager
 ARNs at all and this step no longer exists.
+
+> [!CAUTION]
+> **Don't export `TF_VAR_*` passwords for the applies.** `redpanda`, `clickhouse`
+> and `secrets` read every password from Secrets Manager, and Terragrunt **does
+> not override a `TF_VAR_` that's already set** in the shell. A credentials
+> file left over from an older account (`TF_VAR_clickhouse_admin_password`,
+> `TF_VAR_service_user_passwords`) silently wins: on the third migration the
+> new ClickHouse service got the old file's password while analytics read the
+> secret, and the Redpanda plan failed its password preconditions. Export only
+> the API credentials the bootstrap script needs, and run `env | grep TF_VAR_`
+> before applying; it should print nothing. If a service was already created
+> with the wrong password, bump its `password_wo_version` and apply again.
 
 ---
 
