@@ -250,6 +250,10 @@ only the VPC (`10.20.0.0/16`) goes through it.
 - **Database credentials:** the master user's password is RDS-managed and
   **rotates about every 7 days**, so re-read its secret when a saved password
   stops working. See `docs/NEW-ACCOUNT-MIGRATION.md`, step 13.
+- **After a migration:** the VPN address, the Aurora endpoint and its password
+  secret are all new, and logins don't carry over. Re-create them with
+  `vpn-user.sh`, import the new profile (delete the old one), and edit the
+  saved pgAdmin server.
 
 > [!WARNING]
 > The admin web UI (943) and SSH (22) are open to `admin_cidrs`, which is
@@ -283,6 +287,8 @@ Both ship with a per-IP rate-based rule (`rate_limit`, default 2000 requests/5 m
 
 > [!IMPORTANT]
 > This module does **not** use the legacy `tier` argument (`"development"`/`"production"`) — organizations on ClickHouse Cloud's current (non-legacy) pricing model have it rejected outright by the API with `Service tier is not supported`. Instead, size the service per environment via the `clickhouse` block in `env.hcl`: `num_replicas`, `min_replica_memory_gb`, and `max_replica_memory_gb` (fixed-size vertical scaling; set min == max for a non-autoscaling service). Whenever `idle_scaling = true`, `idle_timeout_minutes` must also be set — the module defaults it to `5`.
+
+With `idle_scaling` on, ClickHouse suspends after 5 idle minutes and takes longer to wake than analytics-service's 15-second request timeout. If analytics starts against a sleeping service it logs `ensure_database failed` and runs on without its database; wake ClickHouse and force a new deployment of analytics while it's awake.
 
 ### Credentials
 

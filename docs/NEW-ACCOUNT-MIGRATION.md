@@ -85,6 +85,10 @@ for each:
   deploy at once one can fail with *"the provision task did not start"*. That
   service keeps its previous version; redeploy it alone.
 
+On the third account AWS raised the Fargate quota from 6 to **8** on its
+own within hours, while the request for 64 stayed open. 8 fits all 31 services
+at `cpu = 256`.
+
 Undo all three once the limits lift. Without `ecs_deployment`, ECS's
 zero-downtime defaults (100 / 200) apply.
 
@@ -591,6 +595,11 @@ To connect, use **OpenVPN Connect**: either Import Profile → URL →
 file holds the user's certificate and key, so `*.ovpn` is gitignored. The VPN
 is a split tunnel: only `10.20.0.0/16` goes through it.
 
+After a migration the VPN server has a **new address**, and logins and
+profiles don't carry over: run `admin-password` and `add <user>` again, then
+each person **deletes the old profile** in OpenVPN Connect and imports the new
+one.
+
 > [!NOTE]
 > `remove` schedules the secret's deletion with a 7-day recovery window. Re-adding
 > the same name within those days fails until you restore the secret
@@ -621,8 +630,20 @@ To connect pgAdmin, first connect the VPN, then register a server:
 | Password | `aws secretsmanager get-secret-value --secret-id '<rds!cluster-… secret>' --query SecretString --output text`, the `password` field. The ARN is the cluster's `MasterUserSecret`. |
 | SSL mode | **`require`**: the cluster has `rds.force_ssl = 1` and refuses plain connections |
 
-There is one database per service (`binbon_auth`, `binbon_wallet`, …, 19 in
-all), plus `app`.
+There is one database per service (`binbon_auth`, `binbon_wallet`, …), plus
+`app`.
+
+After a migration, **edit the saved server**: the cluster endpoint's `<id>`
+and the `rds!cluster-…` secret are new in every account, and the databases
+start empty. Read both with:
+
+```bash
+aws rds describe-db-clusters --query 'DBClusters[0].[Endpoint,MasterUserSecret.SecretArn]' --output text
+```
+
+To check the path before opening pgAdmin, with the VPN connected:
+`Test-NetConnection <endpoint> -Port 5432` (PowerShell) should report
+`TcpTestSucceeded : True`.
 
 > [!WARNING]
 > The master password **rotates about every 7 days** (step 15). The services
@@ -711,6 +732,24 @@ Also point each served host at the **new** ALB. Dev has two `CNAME`s,
 changes with every account, so update or delete every record that still names
 the old one, along with the old account's validation CNAMEs. Those are the
 `…acm-validations.aws` values that match no certificate in the new account.
+
+> [!WARNING]
+> **A `200` doesn't prove the cutover.** If the old account still runs (a
+> blocked account keeps serving its existing tasks), its ALB answers
+> `/health` with 200 too, so developers keep using the old account, and its
+> data, without noticing. Compare the record with the new ALB's name:
+>
+> ```bash
+> aws elbv2 describe-load-balancers --query 'LoadBalancers[0].DNSName' --output text
+> dig +short CNAME api-gateway.dev.binbon.ch @"$(dig +short NS binbon.ch | head -1)"
+> ```
+>
+> Edit the existing record rather than deleting and re-adding it: in between,
+> resolvers can cache *"no such name"* for up to the zone's negative TTL (10
+> minutes at GoDaddy). The records' own TTL is an hour, so a machine that
+> resolved the old name recently reaches the old ALB until then; flushing its
+> DNS cache fixes that. To test the new ALB before switching DNS, pin the name
+> to it: `curl --resolve api-gateway.dev.binbon.ch:443:<new-alb-ip> https://api-gateway.dev.binbon.ch/health`.
 
 ### 14b. Hand the certificates to Terraform
 
@@ -1332,9 +1371,14 @@ then type the fixed one.
   creates its database and its `events` table at startup
   (`ANALYTICS_ENSURE_SCHEMA`, on by default). The tables in
   `migrations/clickhouse/0001_analytics.sql` aren't used by any service. With
-  `idle_scaling` on, its first start can time out while ClickHouse wakes up
-  (`Database binbon_analytics does not exist`). ECS restarts the task, and
-  the second start goes through.
+  `idle_scaling` on, ClickHouse suspends after 5 idle minutes, and waking
+  takes longer than analytics' 15-second request timeout. Its startup then
+  logs `ensure_database failed (may already exist) error=error sending
+  request` and **carries on without the database**: it doesn't exit, so ECS
+  doesn't restart it. On the third migration both of its first starts hit a
+  sleeping service. Wake ClickHouse first (any query, or the console), then
+  force a new deployment of analytics-service while it's awake; startup then
+  takes under a second. Once the database exists the warning is harmless.
 - **Dev-only switches.** Dev's `env.hcl` turns on two things the other
   environments must decide on separately. The first is `OTP_FIXED_CODE` on
   auth (step 20). The second is `MEDIA_PRIVATE_ACCESS_ENABLED` on media: with
