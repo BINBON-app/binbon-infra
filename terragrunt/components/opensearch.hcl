@@ -48,9 +48,5 @@ config_path="../alb"
  mock_outputs_allowed_terraform_commands=["init","validate","plan","destroy"]
 }
 inputs={
-name="binbon-${local.env.locals.environment}",vpc_id=dependency.network.outputs.vpc_id,data_subnet_ids=dependency.network.outputs.data_subnet_ids,app_security_group_id=dependency.alb.outputs.task_security_group_id,kms_key_arn=dependency.foundation.outputs.kms_key_arn,instance_type=local.opensearch.instance_type,instance_count=local.opensearch.instance_count,volume_size_gb=local.opensearch.volume_size_gb,tags=local.tags,
-# AWS created AWSServiceRoleForAmazonOpenSearchService in this account on the
-# first CreateDomain call, so Terraform must not try to create it again. Leave
-# this false for any account where a VPC OpenSearch domain has been attempted.
-create_service_linked_role=false
+name="binbon-${local.env.locals.environment}",vpc_id=dependency.network.outputs.vpc_id,data_subnet_ids=dependency.network.outputs.data_subnet_ids,app_security_group_id=dependency.alb.outputs.task_security_group_id,kms_key_arn=dependency.foundation.outputs.kms_key_arn,instance_type=local.opensearch.instance_type,instance_count=local.opensearch.instance_count,volume_size_gb=local.opensearch.volume_size_gb,tags=local.tags
 }

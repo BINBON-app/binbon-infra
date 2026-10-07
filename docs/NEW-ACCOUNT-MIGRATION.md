@@ -21,7 +21,6 @@ has caused a full-fleet outage when forgotten:
 | Gap | Symptom if skipped | Fixed by |
 |---|---|---|
 | ACM certificates | No `:443` at all; `:80` returns a 503 fixed-response | `request-certs.sh`, then the ARNs in `env.hcl` (step 14) |
-| OpenSearch service-linked role | `CreateDomain` fails: *must enable a service-linked role* | Re-run the apply (see step 7) |
 | OpenVPN Marketplace subscription | VPN instance fails to launch | Accept in the Marketplace console |
 | GitHub repo variables/secrets | CI pushes images to the *old* account | Set them by hand (step 10) |
 | Container images | Every service sits on the `:<name>-replace` placeholder | Run the backend deploy workflow |
@@ -270,23 +269,22 @@ ARNs at all and this step no longer exists.
 ./scripts/tg.sh run --all --non-interactive -- apply -auto-approve
 ```
 
-**Expect the first run to fail on `opensearch`**, with:
+The first run used to fail on `opensearch` with *"you must enable a
+service-linked role to give Amazon OpenSearch Service permissions to access
+your VPC"*, because a fresh account doesn't have
+`AWSServiceRoleForAmazonOpenSearchService` until something creates it.
+**Step 3's bootstrap now creates it** (`service_linked_roles` in
+`modules/bootstrap`), once per account and before any component runs, so the
+first run goes through.
 
-> ValidationException: Before you can proceed, you must enable a service-linked
-> role to give Amazon OpenSearch Service permissions to access your VPC.
+On an account where the role already exists (the failed call itself creates
+it), the bootstrap apply fails with *"has been taken"*. Import it instead:
 
-This is normal in a fresh account. The failed `CreateDomain` call itself causes
-AWS to provision `AWSServiceRoleForAmazonOpenSearchService`, so **simply run the
-same command again** and it succeeds. `secrets` and `services` are skipped on the
-first run because they sit downstream of `opensearch` in the DAG — they run on the
-second pass.
-
-The module carries an `aws_iam_service_linked_role` behind
-`create_service_linked_role` (default `true`) for accounts where the role genuinely
-does not exist. If the role already exists you get
-`InvalidInput: Service role name ... has been taken`; set
-`create_service_linked_role = false` in `terragrunt/components/opensearch.hcl`.
-It is set to `false` today because the reference account already has the role.
+```bash
+cd terragrunt/bootstrap
+terragrunt import 'aws_iam_service_linked_role.this["opensearchservice.amazonaws.com"]' \
+  arn:aws:iam::<account>:role/aws-service-role/opensearchservice.amazonaws.com/AWSServiceRoleForAmazonOpenSearchService
+```
 
 Expect roughly **470 resources** and 30–45 minutes; Aurora and OpenSearch dominate.
 Run it where nothing will cut it short. OpenSearch alone took 14 minutes in
@@ -821,9 +819,10 @@ Everything else, including the per-service databases, runs in the workflow.
 > spelling is not a valid command and exits with generic usage text rather than
 > an obvious error, which reads like the workflow did nothing.
 
-A full apply into a **fresh** account fails once on the OpenSearch service-linked
-role (see step 7); the workflow retries automatically for `stack = all` +
-`apply`, since that failed call is what makes AWS create the role.
+A full apply into a fresh account no longer fails on the OpenSearch
+service-linked role, because bootstrap creates it (step 7). The workflow still
+retries once for `stack = all` + `apply`, which costs nothing when the first run
+succeeds.
 
 ---
 

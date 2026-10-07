@@ -34,3 +34,16 @@ resource "aws_dynamodb_table" "lock" {
   }
   tags = var.tags
 }
+
+# Account-global service-linked roles. Each exists once per account and a
+# service only creates its own the first time it's used, so a fresh account's
+# first apply failed: OpenSearch's CreateDomain answered "you must enable a
+# service-linked role ... to access your VPC". Bootstrap runs once per account
+# before any component, so the roles live here. In an account where a role
+# already exists, import it instead of creating it:
+#   terragrunt import 'aws_iam_service_linked_role.this["<service>"]' <role ARN>
+resource "aws_iam_service_linked_role" "this" {
+  for_each         = var.service_linked_roles
+  aws_service_name = each.value
+  tags             = var.tags
+}
