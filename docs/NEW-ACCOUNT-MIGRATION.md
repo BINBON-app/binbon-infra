@@ -539,6 +539,34 @@ roll back, rather than as a green fleet that silently can't publish.
 >
 > Step 19 covers the pre-merge check.
 
+### Reading the logs: what's normal and what isn't
+
+A scan of every service's `ERROR`/`WARN` lines on a healthy dev fleet still
+finds plenty. These are expected and need no action:
+
+| line | why it's fine |
+|---|---|
+| `CORS_ALLOWED_ORIGINS unset or '*'`, `OTP_FIXED_CODE is set`, `VERIFICATION_ENFORCED is OFF` | dev-only switches, logged at every start or request |
+| recommendation: `DATABASE_URL unset: … Redis-only mode` | a supported mode |
+| `/health` → `503` once, at startup | the Kafka gate (step 17) before the first connection |
+| chat: `chat_expiry is unavailable; consumers run without partition leases` | followed within ~10 s by `partition leases are active` |
+| rskafka (INFO): `NotLeaderOrFollower`, `Invaliding cached leader`, `Connection is poisoned … early eof` | Redpanda moved a partition or closed an idle connection; the client re-resolves and retries |
+| scylla: `Failed to fetch metadata using current control connection` (including Keyspaces' `Internal server error`) | a managed-service blip; the driver switches connection |
+| analytics: `batch insert failed; retrying, offset not advanced`, once | ClickHouse waking from idle; the batch is retried, nothing is lost |
+
+These are **not** noise:
+
+- the **same warning on every pass** of a background job (the `COUNT(*)
+  unsupported` reconcile warnings ran ~60 an hour, see step 18);
+- `TopicAuthorizationFailed`, SASL or authentication errors (step 17);
+- `feature unavailable` / a closed gate naming a table (step 18);
+- analytics' `ensure_database failed` with no later success (*Post-migration
+  notes*);
+- a `5xx` on an `/api/v1/...` route. Trace its `request_id` through
+  api-gateway and the service it reached; the service's own line usually
+  names the cause (the avatar 503 named `CDN_BASE_URL`);
+- `panic`, or a task that keeps restarting.
+
 ---
 
 ## 13. Check the VPN actually serves
