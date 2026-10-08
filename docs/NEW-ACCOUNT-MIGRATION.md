@@ -70,7 +70,11 @@ for each:
 - `media_cloudfront_enabled = false` builds `media` without its distribution.
   `secrets` then writes an empty `CDN_BASE_URL`, and the services serve
   presigned S3 URLs. Without it, `secrets` and `services` can't apply,
-  because `secrets` reads media's CloudFront address.
+  because `secrets` reads media's CloudFront address. The cost: **avatar and
+  cover uploads answer 503** (`POST /api/v1/users/me/avatars`). user-service
+  refuses to store a presigned URL that expires in minutes as a profile image,
+  and logs *"media-service returned a profile-image URL that cannot be stored;
+  set CDN_BASE_URL"*. That's by design; it lasts until CloudFront is back.
 - `cpu = 256` per service fits all 31 in 7.75 vCPU, with room for one
   deployment at a time.
 - `ecs_deployment = { minimum_healthy_percent = 0, maximum_percent = 100 }`
@@ -1154,6 +1158,21 @@ rejects at PREPARE. comment-service's keyset paging
 dev. Page with two single-column reads instead: the rest of the cursor's
 timestamp (`created_at = ? AND id < ?`), then the timestamps beyond it
 (`created_at < ?`). feed, story and comment do it this way.
+
+Keyspaces also has **no aggregate functions**, so `SELECT COUNT(*)` fails at
+PREPARE too. engagement, comment and story prepared their counter-reconcile
+counts with `.ok()`, so the service started and the statement was simply
+missing. Every reconcile pass then logged *"COUNT(*) unsupported on this
+backend"* (about 60 an hour on dev once videos had activity), and drifted
+counters were never corrected. They now read the partition's single clustering
+column with `execute_iter` and count the rows in code, which pages and prepares
+on both backends.
+
+> [!TIP]
+> A statement prepared with `.ok()` hides a Keyspaces rejection: nothing fails at
+> startup, and the feature quietly degrades. When adding one, run
+> `keyspaces_prepare` (below) or check the service's first log lines on dev,
+> and prefer `?` for anything the service can't do without.
 
 Both comment-service and feed-service have an **ignored** test,
 `keyspaces_prepare`, that runs the service's own `Db::connect` against the
