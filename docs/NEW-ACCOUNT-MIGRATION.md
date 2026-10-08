@@ -541,6 +541,22 @@ roll back, rather than as a green fleet that silently can't publish.
 
 ### Reading the logs: what's normal and what isn't
 
+To scan the whole fleet, count each service's matching lines since your last
+check. Keep the window short: a 12-hour window re-reports problems that were
+fixed hours ago, so compare a line's timestamp with the fix's deploy time
+before treating it as new. A long window also takes minutes, since every page
+of every log group is read.
+
+```bash
+SINCE=$(( ($(date +%s) - 3600) * 1000 ))    # the last hour
+for lg in $(aws logs describe-log-groups --log-group-name-prefix /ecs/binbon-dev/ \
+            --query 'logGroups[].logGroupName' --output text); do
+  n=$(aws logs filter-log-events --log-group-name "$lg" --start-time "$SINCE" \
+        --filter-pattern '?ERROR ?WARN ?panic' --query 'events[].eventId' --output text | wc -w)
+  [ "$n" -gt 0 ] && echo "$n  $lg"
+done
+```
+
 A scan of every service's `ERROR`/`WARN` lines on a healthy dev fleet still
 finds plenty. These are expected and need no action:
 
