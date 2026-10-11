@@ -98,7 +98,11 @@ locals {
       }, secret_arns = {
       }, redpanda_user = null, task_policy_json = null
     }
-    media-service = { image = "binbon-dev:media-service-replace", container_port = 8085, cpu = 256, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev", MEDIA_PRIVATE_ACCESS_ENABLED = "true"
+    # MEDIA_HLS_BASE_URL: where players fetch signed HLS playlists. Without CloudFront
+    # (media_cloudfront_enabled = false) media-service serves EVERY video's playlist
+    # through its signed route, since a presigned S3 link signs only the master
+    # playlist and the player's unsigned requests for the rest get 403.
+    media-service = { image = "binbon-dev:media-service-replace", container_port = 8085, cpu = 256, memory = 1024, desired_count = 1, min_count = 1, max_count = 3, path_patterns = [], environment = { APP_ENV = "dev", MEDIA_PRIVATE_ACCESS_ENABLED = "true", MEDIA_HLS_BASE_URL = "https://api-gateway.dev.binbon.ch"
       }, secret_arns = {
       }, redpanda_user = "media-service", task_policy_json = null
     }
