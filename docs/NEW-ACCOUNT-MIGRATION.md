@@ -585,11 +585,24 @@ finds plenty. These are expected and need no action:
 | rskafka (INFO): `NotLeaderOrFollower`, `Invaliding cached leader`, `Connection is poisoned … early eof` | Redpanda moved a partition or closed an idle connection; the client re-resolves and retries |
 | scylla: `Failed to fetch metadata using current control connection` (including Keyspaces' `Internal server error`) | a managed-service blip; the driver switches connection |
 | analytics: `batch insert failed; retrying, offset not advanced`, once | ClickHouse waking from idle; the batch is retried, nothing is lost |
+| comment / story: `… counter drift corrected` (WARN), now and then | the counter reconciler doing its job: a crash between a like or view and its counter update left the counter off by one, and it put it right |
+
+The counter reconcilers are quiet when healthy, so silence is the good
+result. engagement logs a successful pass only at `debug`, which isn't shown;
+comment and story log nothing for a pass with no drift, and log
+`… reconciler started` once at startup. Each logs a failure: engagement as
+`WARN engagement counter reconcile failed`, comment and story as `ERROR …
+reconcile failed`.
+
+To see that events are flowing at all, look at the consumers' `offset=` in
+their startup and fetch lines: a consumer still at `offset=0` after people
+have used the app has received nothing on that topic.
 
 These are **not** noise:
 
 - the **same warning on every pass** of a background job (the `COUNT(*)
-  unsupported` reconcile warnings ran ~60 an hour, see step 18);
+  unsupported` reconcile warnings ran ~60 an hour, see step 18), or `drift
+  corrected` for the same item again and again;
 - `TopicAuthorizationFailed`, SASL or authentication errors (step 17);
 - `feature unavailable` / a closed gate naming a table (step 18);
 - analytics' `ensure_database failed` with no later success (*Post-migration
