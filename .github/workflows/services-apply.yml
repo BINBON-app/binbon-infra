@@ -1,0 +1,71 @@
+name: Services apply (internal URLs)
+
+# The second half of the automatic service-config flow. When a backend push to
+# dev makes a service call another one through a URL this repo doesn't set (a
+# `localhost:<port>` fallback in its code), the backend's service config check
+# (service-config-check.yml there) writes the Service Connect URL into
+# internal_service_urls in components/services.hcl and opens a pull request here
+# on an auto/config-* branch.
+#
+#   pull request -> plan of the dev services stack, so the reviewer sees exactly
+#                   which task definitions change
+#   merge to main -> apply
+#
+# The apply only registers new task-definition revisions: ECS services ignore
+# task_definition (modules/ecs-services), so nothing restarts here. Each service
+# takes the new environment on its next deploy from the backend repository; the
+# pull request lists the commands.
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ["terragrunt/components/services.hcl"]
+  push:
+    branches: [main]
+    paths: ["terragrunt/components/services.hcl"]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  # Shared with terraform-apply.yml and kafka-apply.yml: one Terraform run per
+  # environment at a time.
+  group: terraform-dev
+  cancel-in-progress: false
+
+jobs:
+  services:
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_TERRAFORM_APPLY_ROLE_ARN }}
+          aws-region: eu-central-1
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.8"
+          terraform_wrapper: false
+
+      - name: Install Terragrunt
+        run: |
+          curl -Lo /tmp/terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/v1.1.2/terragrunt_linux_amd64
+          sudo install -m 0755 /tmp/terragrunt /usr/local/bin/terragrunt
+
+      - name: Plan the services stack
+        env:
+          TG_NON_INTERACTIVE: "true"
+        working-directory: terragrunt/envs/dev/eu-central-1/services
+        run: terragrunt --non-interactive plan -input=false -no-color
+
+      - name: Apply the services stack
+        if: github.event_name != 'pull_request'
+        env:
+          TG_NON_INTERACTIVE: "true"
+        working-directory: terragrunt/envs/dev/eu-central-1/services
+        run: terragrunt --non-interactive apply -input=false -auto-approve -no-color
