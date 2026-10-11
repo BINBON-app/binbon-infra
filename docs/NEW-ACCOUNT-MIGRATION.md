@@ -600,7 +600,7 @@ finds plenty. These are expected and need no action:
 | chat: `chat_expiry is unavailable; consumers run without partition leases` | followed within ~10 s by `partition leases are active` |
 | rskafka (INFO): `NotLeaderOrFollower`, `Invaliding cached leader`, `Connection is poisoned … early eof` | Redpanda moved a partition or closed an idle connection; the client re-resolves and retries |
 | scylla: `Failed to fetch metadata using current control connection` (including Keyspaces' `Internal server error`) | a managed-service blip; the driver switches connection |
-| analytics: `batch insert failed; retrying, offset not advanced`, once | ClickHouse waking from idle; the batch is retried, nothing is lost |
+| analytics: `batch insert failed; retrying, offset not advanced`, singly or as a burst every ~16 s for a minute or two | ClickHouse waking from idle after 5 quiet minutes; analytics keeps its offset and retries until the write lands, so nothing is lost. A burst that **doesn't stop** is a real outage: check the service's state in the ClickHouse console and its IP allow-list against the NAT IP |
 | comment / story: `… counter drift corrected` (WARN), now and then | the counter reconciler doing its job: a crash between a like or view and its counter update left the counter off by one, and it put it right |
 
 The counter reconcilers are quiet when healthy, so silence is the good
@@ -1521,6 +1521,12 @@ then type the fixed one.
   sleeping service. Wake ClickHouse first (any query, or the console), then
   force a new deployment of analytics-service while it's awake; startup then
   takes under a second. Once the database exists the warning is harmless.
+  Every write after a quiet spell pays the same wake-up: analytics retries for
+  a minute or two (on 2026-10-11, 12:56:33 to 12:58:09, every 16 s), then
+  catches up. To make that rarer, raise the idle timeout: the `clickhouse`
+  module takes `idle_timeout_minutes` (default 5), which
+  `components/clickhouse.hcl` doesn't pass today; add it there from the env's
+  `clickhouse` block. Longer means more billed running time.
 - **Dev-only switches.** Dev's `env.hcl` turns on two things the other
   environments must decide on separately. The first is `OTP_FIXED_CODE` on
   auth (step 20). The second is `MEDIA_PRIVATE_ACCESS_ENABLED` on media: with
