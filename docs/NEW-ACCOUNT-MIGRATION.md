@@ -75,6 +75,22 @@ for each:
   refuses to store a presigned URL that expires in minutes as a profile image,
   and logs *"media-service returned a profile-image URL that cannot be stored;
   set CDN_BASE_URL"*. That's by design; it lasts until CloudFront is back.
+
+  **Video playback needs one more setting.** An HLS video is a master
+  playlist that names its child playlists and segments by relative path. A
+  presigned S3 link signs only the master, so the player's requests for the
+  rest got **403** and no video played. Without a CDN, media-service now serves
+  every video's playlists through its signed route,
+  `/api/v1/media/{id}/hls/{file}?exp=&sig=`, which signs each child playlist
+  and presigns each segment. Its URLs start with `MEDIA_HLS_BASE_URL`, so set
+  that in the env's media-service `environment` to the public API
+  (`https://api-gateway.dev.binbon.ch` on dev); left empty, the URL is a
+  relative path the player can't resolve. The route also needs
+  `MEDIA_URL_SIGNING_KEY` (step 6 creates it). Check a video end to end by
+  fetching its master through the API, then the child playlist it names, then
+  a segment: all three should answer 200. Once CloudFront is back, public
+  videos return to CDN URLs by themselves; `MEDIA_HLS_BASE_URL` stays, since
+  private videos use the same route.
 - `cpu = 256` per service fits all 31 in 7.75 vCPU, with room for one
   deployment at a time.
 - `ecs_deployment = { minimum_healthy_percent = 0, maximum_percent = 100 }`
@@ -1258,6 +1274,12 @@ SCYLLA_NODES=cassandra.eu-central-1.amazonaws.com:9142 SCYLLA_KEYSPACE=<keyspace
 SCYLLA_USERNAME=... SCYLLA_PASSWORD=... \
 cargo test -p <service> --features keyspaces --test keyspaces_prepare -- --ignored --nocapture
 ```
+
+> [!TIP]
+> Building in WSL with little memory, add `-j 2`. A WSL VM with 3 GB and 8
+> CPUs runs eight compile jobs at once; building media-service that way
+> exhausted its memory and WSL stopped answering
+> (`Wsl/Service/E_UNEXPECTED`) until `wsl --shutdown`.
 
 feed's file also has `provision_plan`, which dry-runs `feed-service provision`
 (or applies it with `PROVISION_APPLY=1`, using the provisioner credential).
