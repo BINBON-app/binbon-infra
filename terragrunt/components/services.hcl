@@ -115,7 +115,7 @@ env=read_terragrunt_config(find_in_parent_folders("env.hcl"))
   # Every other service's outbound traffic is async (Kafka via KAFKA_BROKERS),
   # which needs no per-pair wiring.
   internal_service_urls = {
-    "payment-service" = { WALLET_SERVICE_URL = "http://wallet-service:8097" }
+    "payment-service" = { WALLET_SERVICE_URL = "http://wallet-service:8097", USER_SERVICE_INTERNAL_URL = "http://user-service:8082" }
     "payout-service"  = { WALLET_SERVICE_URL = "http://wallet-service:8097" }
     "live-service"    = { WALLET_SERVICE_URL = "http://wallet-service:8097" }
     "admin-service" = {
