@@ -89,6 +89,17 @@ for each:
   deploy at once one can fail with *"the provision task did not start"*. That
   service keeps its previous version; redeploy it alone.
 
+  The job now prints AWS's reason. At 8 vCPU with all 31 services at 0.25
+  (7.75), it is *"You've reached the limit on the number of vCPUs you can run
+  concurrently"*: there's room for **one** provision task at a time, so any push
+  that changes two or more of chat, comment, engagement, feed and story fails
+  all but one. **Don't use "Re-run failed jobs"**: it restarts them together and
+  they fail again. Dispatch each one and wait for it to finish:
+
+  ```bash
+  gh workflow run build-and-deploy.yml --ref dev -f environment=dev -f service=engagement-service
+  ```
+
 On the third account AWS raised the Fargate quota from 6 to **8** on its
 own within hours, while the request for 64 stayed open. 8 fits all 31 services
 at `cpu = 256`.
