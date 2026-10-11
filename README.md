@@ -375,6 +375,9 @@ terragrunt/
 
 .github/workflows/
   terraform-apply.yml            # This repo: manual, infra-only changes — never per-deploy
+  kafka-apply.yml                # Plans/applies redpanda for env.hcl PRs (the backend's auto/kafka-* PRs)
+  services-apply.yml             # Plans/applies services for services.hcl PRs (the backend's auto/config-* PRs)
+  rotation-restart.yml           # Daily: restarts tasks after Aurora's password rotates
 
 ci-templates/monorepo/           # Copy into the service monorepo's .github/workflows/
                                   # (build-and-deploy.yml deploys via the ECS API directly)

@@ -91,10 +91,15 @@ for each:
 
   The job now prints AWS's reason. At 8 vCPU with all 31 services at 0.25
   (7.75), it is *"You've reached the limit on the number of vCPUs you can run
-  concurrently"*: there's room for **one** provision task at a time, so any push
-  that changes two or more of chat, comment, engagement, feed and story fails
-  all but one. **Don't use "Re-run failed jobs"**: it restarts them together and
-  they fail again. Dispatch each one and wait for it to finish:
+  concurrently"*: there's room for **one** provision task at a time. The step
+  therefore **retries a capacity refusal** every 30 seconds for up to 10
+  minutes; the other service's provision task stops within about a minute, so a
+  push that changes several of chat, comment, engagement, feed and story now
+  just takes a few minutes longer (run #215 failed here before the retry). Any
+  other refusal still fails at once. If the account stays full for the whole
+  window, the job fails as before. **Don't use "Re-run failed jobs"** then: it
+  restarts the failed services together. Dispatch each one and wait for it to
+  finish:
 
   ```bash
   gh workflow run build-and-deploy.yml --ref dev -f environment=dev -f service=engagement-service
@@ -1325,7 +1330,7 @@ service through the backend CI so its revision picks it up:
 | the variable is… | put it in |
 |---|---|
 | a shared secret that already exists | that service's `service_secret_keys` entry |
-| a URL of another service | `internal_service_urls`, as `http://<service>:<port>` (Service Connect) |
+| a URL of another service | `internal_service_urls`, as `http://<service>:<port>` (Service Connect). **Automatic** on a dev push; see below. |
 | plain config | the service's `environment` in `env.hcl` |
 | a **new** generated secret | `bootstrap-secrets.sh`, then `components/secrets.hcl` and `modules/secrets`, then `service_secret_keys`. Re-run the bootstrap, then apply `secrets` and `services`. `MEDIA_URL_SIGNING_KEY` was added this way. |
 
@@ -1337,6 +1342,34 @@ python3 scripts/check-service-config.py --infra ../binbon-aws-terraform-complete
 > The deploy workflow allows only one pending run per environment, and a newer
 > dispatch cancels an older one that's still queued. When several services
 > need redeploying, dispatch them **one at a time** and wait for each to finish.
+
+### Missing service URLs fix themselves: automatic infra pull requests
+
+A variable whose code fallback is `http://localhost:<port>` is a call to another
+service, and the port names which one: the single `env.hcl` service with that
+`container_port` (or `rbac-grpc` on 9084). On 2026-10-11 a push made
+payment-service call user-service through `USER_SERVICE_INTERNAL_URL`, the
+infra didn't set it, and payment-service would have called `localhost:8082`.
+
+On a **push to `dev`**, a failing check now runs
+`check-service-config.py --fix` against this repo's `main`. It writes the
+Service Connect URL (`http://user-service:8082`) into `internal_service_urls`
+in `components/services.hcl` and opens a pull request here on an
+`auto/config-<sha>` branch, listing what it adds. From there:
+
+1. `services-apply.yml` (this repo) runs a dev `services` **plan** on the pull
+   request. It only registers new task-definition revisions; nothing restarts.
+2. **Merge it**, and the same workflow **applies** `services`.
+3. **Redeploy each service it names**: a running service keeps its old
+   environment until its next deploy. The pull request lists the commands.
+4. Re-run the backend's service config check, and it passes.
+
+Secrets and plain config can't be inferred from the code, so they still fail
+the check, and the pull request lists them under *Still needs a person*. It
+uses the same `INFRA_PR_TOKEN` as the Kafka pull requests (step 17), and while
+one automatic config PR is open, later pushes don't open another. The fix was
+tested on the infra as it was before payment-service's URL was added by hand:
+its change was byte-identical to the hand-made one.
 
 ---
 
