@@ -602,6 +602,7 @@ finds plenty. These are expected and need no action:
 | scylla: `Failed to fetch metadata using current control connection` (including Keyspaces' `Internal server error`) | a managed-service blip; the driver switches connection |
 | analytics: `batch insert failed; retrying, offset not advanced`, singly or as a burst every ~16 s for a minute or two | ClickHouse waking from idle after 5 quiet minutes; analytics keeps its offset and retries until the write lands, so nothing is lost. A burst that **doesn't stop** is a real outage: check the service's state in the ClickHouse console and its IP allow-list against the NAT IP |
 | comment / story: `… counter drift corrected` (WARN), now and then | the counter reconciler doing its job: a crash between a like or view and its counter update left the counter off by one, and it put it right |
+| media: `discard: dropped unsent video events` (INFO); video-processing: `original no longer exists (upload discarded); skipping transcode` (INFO) | a service (feed, say) rejected a video publish after the file landed, so media-service discarded it. The first means its transcode request was cancelled before sending; the second, that it had already gone out and the transcoder skipped it |
 
 The counter reconcilers are quiet when healthy, so silence is the good
 result. engagement logs a successful pass only at `debug`, which isn't shown;
@@ -616,6 +617,15 @@ have used the app has received nothing on that topic.
 
 These are **not** noise:
 
+- video-processing: `transcode exhausted attempts; moved to failed (DLQ)`. Since
+  2026-10-13 a discarded upload no longer gets here, so this is a video that
+  really couldn't be transcoded. Before that fix, all 15 DLQ entries on
+  2026-10-12 were rejected publishes: their `media_objects` rows (in
+  `binbon_media`, over the VPN) were created, confirmed, deleted and purged
+  within the same second, and the bucket's versioning showed each original
+  uploaded and deleted together. Check the row the same way before treating
+  an entry as a lost video. A rejected publish itself is a 4xx to the client,
+  which no service logs, so its cause needs the client's error response;
 - the **same warning on every pass** of a background job (the `COUNT(*)
   unsupported` reconcile warnings ran ~60 an hour, see step 18), or `drift
   corrected` for the same item again and again;
