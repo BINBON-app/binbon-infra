@@ -41,5 +41,5 @@ config_path="../waf-cloudfront"
  mock_outputs_allowed_terraform_commands=["init","validate","plan","destroy"]
 }
 inputs={
-name="binbon-${local.env.locals.environment}",kms_key_arn=dependency.foundation.outputs.kms_key_arn,cloudfront_acm_certificate_arn=local.env.locals.cloudfront_certificate_arn,enable_cloudfront=try(local.env.locals.media_cloudfront_enabled,true),waf_web_acl_arn=dependency.waf_cloudfront.outputs.web_acl_arn,tags=local.tags
+name="binbon-${local.env.locals.environment}",kms_key_arn=dependency.foundation.outputs.kms_key_arn,cloudfront_acm_certificate_arn=local.env.locals.cloudfront_certificate_arn,enable_cloudfront=try(local.env.locals.media_cloudfront_enabled,true),public_read=try(local.env.locals.media_public_read,false),sse_algorithm=try(local.env.locals.media_sse_algorithm,"aws:kms"),waf_web_acl_arn=dependency.waf_cloudfront.outputs.web_acl_arn,tags=local.tags
 }

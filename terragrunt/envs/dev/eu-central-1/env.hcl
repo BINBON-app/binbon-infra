@@ -12,6 +12,13 @@ locals {
   # empty CDN_BASE_URL (presigned S3 URLs). Set back to true once verified,
   # then apply media, secrets, and redeploy media/user/video-processing.
   media_cloudfront_enabled = false
+  # The media bucket is publicly readable on dev, as set by hand in the console
+  # on 2026-10-12 and imported here: Block Public Access off, a public
+  # s3:GetObject policy on every object, and AES256 default encryption. That
+  # includes p/, so private media is readable by anyone with its path. Staging
+  # and prod keep the defaults (private, aws:kms).
+  media_public_read   = true
+  media_sse_algorithm = "AES256"
   opensearch = {
     instance_type  = "t3.small.search"
     instance_count = 1

@@ -3,19 +3,23 @@ resource "aws_s3_bucket" "media" {
   force_destroy = false
   tags          = var.tags
 }
+# public_read turns all four off: the public-read bucket policy below needs
+# block_public_policy and restrict_public_buckets off to apply at all.
 resource "aws_s3_bucket_public_access_block" "media" {
   bucket                  = aws_s3_bucket.media.id
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
+  block_public_acls       = !var.public_read
+  block_public_policy     = !var.public_read
+  ignore_public_acls      = !var.public_read
+  restrict_public_buckets = !var.public_read
 }
 resource "aws_s3_bucket_server_side_encryption_configuration" "media" {
   bucket = aws_s3_bucket.media.id
   rule {
+    # An S3 bucket key only matters for AES256 here; the KMS default never set one.
+    bucket_key_enabled = var.sse_algorithm == "AES256" ? true : null
     apply_server_side_encryption_by_default {
-      kms_master_key_id = var.kms_key_arn
-      sse_algorithm     = "aws:kms"
+      kms_master_key_id = var.sse_algorithm == "aws:kms" ? var.kms_key_arn : null
+      sse_algorithm     = var.sse_algorithm
     }
   }
 }
@@ -67,15 +71,22 @@ resource "aws_cloudfront_distribution" "media" {
   }
   tags = var.tags
 }
+# CloudFront's read (enable_cloudfront) and/or anonymous read of every object
+# (public_read). The public statement covers p/ too, so private media is
+# readable by anyone who has its path; see variables.tf.
 resource "aws_s3_bucket_policy" "media" {
-  count  = var.enable_cloudfront ? 1 : 0
+  count  = var.enable_cloudfront || var.public_read ? 1 : 0
   bucket = aws_s3_bucket.media.id
-  policy = jsonencode({ Version = "2012-10-17", Statement = [{ Effect = "Allow", Principal = { Service = "cloudfront.amazonaws.com"
-    }, Action = "s3:GetObject", Resource = "${aws_s3_bucket.media.arn}/*", Condition = { StringEquals = { "AWS:SourceArn" = aws_cloudfront_distribution.media[0].arn
-    }
-    }
-    }]
-  })
+  policy = jsonencode({ Version = "2012-10-17", Statement = concat(
+    var.enable_cloudfront ? [{ Effect = "Allow", Principal = { Service = "cloudfront.amazonaws.com"
+      }, Action = "s3:GetObject", Resource = "${aws_s3_bucket.media.arn}/*", Condition = { StringEquals = { "AWS:SourceArn" = aws_cloudfront_distribution.media[0].arn
+      }
+      }
+    }] : [],
+    var.public_read ? [{ Sid = "PublicReadAllObjects", Effect = "Allow", Principal = "*", Action = "s3:GetObject", Resource = "${aws_s3_bucket.media.arn}/*" }] : [],
+  ) })
+  # S3 refuses a public policy while Block Public Access is on.
+  depends_on = [aws_s3_bucket_public_access_block.media]
 }
 # Both became counted with enable_cloudfront; keeps existing state in place.
 moved {
