@@ -1486,6 +1486,37 @@ then type the fixed one.
 
 ---
 
+## Comparing the repo with what's deployed
+
+Plan every component; a plan only reads, and it lists every place where AWS,
+Redpanda or ClickHouse differs from the repo. Use `-lock=false` so it never
+blocks a running apply:
+
+```bash
+for c in bootstrap github-oidc foundation network waf-cloudfront waf-regional alb \
+         media data opensearch clickhouse vpn redpanda redpanda-endpoint secrets services; do
+  echo "== $c"; ./scripts/tg.sh "$c" plan -no-color -lock=false 2>&1 | grep -E '^Plan:|^No changes|^Error'
+done
+```
+
+`No changes` everywhere means the repo describes what's running. For any
+difference, find out who made it before deciding what to do. CloudTrail keeps
+90 days of management events:
+
+```bash
+aws cloudtrail lookup-events --lookup-attributes AttributeKey=Username,AttributeValue=<user> \
+  --max-items 5000 --query 'Events[].CloudTrailEvent' --output json   # keep readOnly == false
+```
+
+Use `--max-items`, not `--max-results`: the latter returns one page, and most
+events are reads, so writes get missed. Then either revert the change (apply
+the component) or adopt it: change the code to match, `import` any resource
+Terraform doesn't track yet, and plan until it says `No changes`. On
+2026-10-13 this found the only drift since the migration: the console changes
+to dev's media bucket, which were adopted (see below).
+
+---
+
 ## Post-migration notes
 
 - **The API's WAF is on the ALB.** `waf-regional` is attached to the ALB:
@@ -1533,6 +1564,20 @@ then type the fixed one.
   it off, documents, view-once and `access=private` uploads answer 503
   `media_private_access`. Private access also needs `MEDIA_URL_SIGNING_KEY`
   and `INTERNAL_API_KEY`, and in production a non-empty `MEDIA_HLS_BASE_URL`.
+
+- **Dev's media bucket is public, `p/` included.** On 2026-10-12 it was
+  changed by hand in the console (Block Public Access off, a bucket policy
+  allowing anonymous `s3:GetObject` on every object, AES256 instead of the KMS
+  key), and that was then imported into the infra as it stood:
+  `media_public_read = true` and `media_sse_algorithm = "AES256"` in dev's
+  `env.hcl`. Anyone with an object's path can download it, private videos,
+  view-once media and documents under `p/` included. Objects written before
+  the change are KMS-encrypted and still refuse anonymous reads. The
+  `modules/media` defaults are the private, KMS-encrypted bucket, so a new
+  environment doesn't inherit this; a migration does carry dev's setting.
+  To close `p/` again while keeping the rest public, narrow the public
+  statement's `Resource` to exclude it; to close the bucket, set both back
+  and apply `media`.
 
 - **SASL mechanism.** The backend supports `SCRAM-SHA-256` (default),
   `SCRAM-SHA-512` and `PLAIN`, selected by `KAFKA_SASL_MECHANISM`. Nothing in the
