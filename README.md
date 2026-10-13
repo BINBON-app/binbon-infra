@@ -129,7 +129,7 @@ network
 | `data` | Aurora, Redis, Keyspaces | `network`, `foundation`, `alb` |
 | `opensearch` | VPC-attached OpenSearch domain | `network`, `foundation`, `alb` |
 | `clickhouse` | ClickHouse Cloud service | `network` (NAT egress IP allow-list) |
-| `media` | Private S3, CloudFront and MediaConvert role | `foundation`, `waf-cloudfront` |
+| `media` | S3 (private by default; dev is public-read, see the migration runbook), CloudFront and MediaConvert role | `foundation`, `waf-cloudfront` |
 | `waf-cloudfront` | CloudFront-scope WAF Web ACL (`us-east-1`) | — |
 | `waf-regional` | Regional-scope WAF Web ACL (`eu-central-1`), attached to the ALB | — |
 | `vpn` | OpenVPN Access Server for operator access into the VPC; `reachable_ports` opens chosen private services (dev: Aurora 5432) to VPN clients | `network`, `alb`, `data` |
