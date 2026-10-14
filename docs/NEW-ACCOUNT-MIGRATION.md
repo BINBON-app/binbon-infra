@@ -954,8 +954,9 @@ This is silent: the HTTP listener is unaffected, the health check passes, and th
 service reports healthy while background work that opens fresh connections (the
 outbox relay, pool growth) fails continuously.
 
-`.github/workflows/rotation-restart.yml` closes that gap. It runs daily and
-restarts only the services whose task predates the last rotation:
+`.github/workflows/rotation-restart.yml` closes that gap. It runs **hourly**
+(minute 17) and restarts only the services whose task predates the last
+rotation:
 
 ```bash
 ./scripts/restart-stale-db-tasks.sh          # report
@@ -966,8 +967,23 @@ restarts only the services whose task predates the last rotation:
 > It is condition-driven, not date-driven, on purpose. AWS rotates within a
 > window rather than at a fixed interval — one observed gap was 7d17h, not 7d —
 > so a schedule pinned to the expected rotation day drifts and eventually fires
-> *before* the rotation it was meant to follow. Running daily is a no-op on quiet
-> days and self-heals after an off-cycle or manual rotation.
+> *before* the rotation it was meant to follow. Running often is a no-op while
+> nothing has rotated (`up to date: 20   restartable: 0 … Nothing to restart.`)
+> and self-heals after an off-cycle or manual rotation.
+
+It used to run once a day at 05:30 UTC. On 2026-10-14 the password rotated at
+00:13 UTC, and until that run 17 services failed every **new** database
+connection for 5.5 hours: outbox relays, the payment and payout reconcilers,
+red-packet refunds, call ring timeouts. They looked healthy throughout, since
+the HTTP listener and pooled connections keep working; the logs show
+`password authentication failed for user "platformadmin"` from each. Nothing
+user-facing failed only because it was night. Hourly bounds that to under an
+hour, plus GitHub's scheduling delay. To close it completely, run
+`restart-stale-db-tasks.sh --apply` from an EventBridge rule on the secret's
+rotation event.
+
+A manual run (Actions → *Restart tasks after password rotation*) defaults to
+`mode = report`, so it's safe to trigger just to look.
 
 The script reports each service's password source and refuses to pretend a
 restart helps one that still has a pre-composed `DATABASE_URL` — restarting such
