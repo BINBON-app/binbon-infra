@@ -10,24 +10,28 @@ name: Restart tasks after password rotation
 #
 # This restarts only the services whose task predates the last rotation.
 #
-# It runs HOURLY and is condition-driven rather than date-driven. AWS rotates
+# It runs DAILY and is condition-driven rather than date-driven. AWS rotates
 # within a window rather than at a fixed interval - one observed gap was 7d17h,
 # not 7d - so a schedule pinned to the expected rotation day drifts out of
 # alignment and eventually fires before the rotation it was meant to follow. When
 # nothing rotated since the tasks started it is a no-op, and it self-heals after
 # an off-cycle or manual rotation too.
 #
-# Hourly rather than daily: on 2026-10-14 the password rotated at 00:13 UTC and
-# the daily 05:30 run left 17 services failing every new database connection for
-# 5.5 hours. Hourly bounds that to under an hour, plus GitHub's schedule delay.
+# Timing: on 2026-10-14 the password rotated at 00:13 UTC and the old 05:30 run
+# left 17 services failing every new database connection for 5.5 hours. The run
+# now follows the observed rotation window by about an hour. A rotation that
+# lands after it waits for the next day's run; run it by hand then (Actions,
+# mode = apply), or schedule it more often.
 
 on:
   schedule:
-    # Minute 17 of every hour, off the top of the hour where GitHub's queue is
-    # busiest. GitHub's scheduled runs are best-effort and can be delayed under
-    # load; for tighter bounds, drive scripts/restart-stale-db-tasks.sh from an
-    # EventBridge rule on the rotation event instead.
-    - cron: "17 * * * *"
+    # 01:17 UTC daily: about an hour after the observed rotation window (around
+    # 00:00 UTC; 00:13 on 2026-10-14), off the top of the hour where GitHub's
+    # queue is busiest. GitHub's scheduled runs are best-effort and can be
+    # delayed under load; for tighter bounds, drive
+    # scripts/restart-stale-db-tasks.sh from an EventBridge rule on the rotation
+    # event instead.
+    - cron: "17 1 * * *"
 
   workflow_dispatch:
     inputs:
