@@ -954,8 +954,8 @@ This is silent: the HTTP listener is unaffected, the health check passes, and th
 service reports healthy while background work that opens fresh connections (the
 outbox relay, pool growth) fails continuously.
 
-`.github/workflows/rotation-restart.yml` closes that gap. It runs **hourly**
-(minute 17) and restarts only the services whose task predates the last
+`.github/workflows/rotation-restart.yml` closes that gap. It runs **daily at
+01:17 UTC** and restarts only the services whose task predates the last
 rotation:
 
 ```bash
@@ -971,14 +971,19 @@ rotation:
 > nothing has rotated (`up to date: 20   restartable: 0 … Nothing to restart.`)
 > and self-heals after an off-cycle or manual rotation.
 
-It used to run once a day at 05:30 UTC. On 2026-10-14 the password rotated at
-00:13 UTC, and until that run 17 services failed every **new** database
-connection for 5.5 hours: outbox relays, the payment and payout reconcilers,
-red-packet refunds, call ring timeouts. They looked healthy throughout, since
-the HTTP listener and pooled connections keep working; the logs show
-`password authentication failed for user "platformadmin"` from each. Nothing
-user-facing failed only because it was night. Hourly bounds that to under an
-hour, plus GitHub's scheduling delay. To close it completely, run
+The time matters. It used to run at 05:30 UTC. On 2026-10-14 the password
+rotated at 00:13 UTC, and until that run 17 services failed every **new**
+database connection for 5.5 hours: outbox relays, the payment and payout
+reconcilers, red-packet refunds, call ring timeouts. They looked healthy
+throughout, since the HTTP listener and pooled connections keep working; the
+logs show `password authentication failed for user "platformadmin"` from each.
+Nothing user-facing failed only because it was night. 01:17 UTC follows the
+observed rotation window (around 00:00 UTC) by about an hour. It ran hourly
+for a day before going back to daily.
+
+A rotation that lands **after** 01:17 waits for the next day's run, up to about
+24 hours. When the logs show that message, run the workflow by hand with
+`mode = apply`. To close the gap completely, run
 `restart-stale-db-tasks.sh --apply` from an EventBridge rule on the secret's
 rotation event.
 
